@@ -38,17 +38,18 @@ SmoothScroll, under the MIT license.
 - `AppModel.swift`: the settings, the login item and Accessibility access, which the engine
   needs and which is checked every second.
 - `StatusItemController.swift`: the menu bar item, drawn from Lucide's `mouse` (`LucideMouse.swift`).
-- `SettingsView.swift`, `SettingsWindowController.swift`: the settings window. The blurred
-  desktop shows through it with soft colour (`Glow`) behind Liquid Glass cards, on macOS 26 and
-  later, and material ones before. Its curve runs the animator with the settings as they are.
-  Colours come from `Palette`. While the window is open the app shows in the Dock.
+- `SettingsView.swift`, `SettingsWindowController.swift`: the settings, a grouped SwiftUI form
+  of stock controls. Its curve runs the animator with the settings as they are. While the
+  window is open the app shows in the Dock.
 - `UpdateChecker.swift`: compares the version with the latest GitHub release.
 
 ### Resources, assets and scripts
 
 - `Resources/AppIcon.icon`: the app icon, made for Icon Composer: Lucide's `mouse`, filled, white
   on Motile's dark tile. `assets/favicon.svg` is the same icon as a flat SVG.
-- `scripts/build-app.sh`: builds `build/Smoother Scroll.app`, universal, signed ad hoc.
+- `scripts/build-app.sh`: builds `build/Smoother Scroll.app`, universal, signed ad hoc. It stamps
+  the binary with the SDK it was built with: SwiftPM stamps the deployment target's, and macOS
+  then draws the app in the old style, without Liquid Glass.
 - `scripts/release-version.sh`: the version of a commit: `VERSION` and the number of commits.
 
 ## General Rules:
@@ -57,8 +58,8 @@ SmoothScroll, under the MIT license.
 - Scrolling must never stutter. Nothing runs on the engine's thread but the tap and the frames;
   nothing slow runs in the tap, which macOS turns off when it is late.
 - How scrolling feels belongs in `ScrollCore`, where it is tested, not in the engine.
-- The app looks native and modern: standard AppKit and SwiftUI controls on glass, SF Symbols in
-  coloured tiles in the UI, the Lucide mouse for the app.
+- The app looks like the current macOS: stock AppKit and SwiftUI controls in the system's
+  colours, no colours or materials of our own, the Lucide mouse for the app.
 - Do not leave paragraphs of comments on top of the code. Prefer clear names; keep the comments
   that are needed concise. Comments move with the code.
 - Use guard statement patterns in any code you write.

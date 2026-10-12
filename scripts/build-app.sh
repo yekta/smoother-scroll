@@ -13,8 +13,13 @@ BUNDLE_ID="com.yekta.SmootherScroll"
 VERSION="${VERSION:-$(scripts/release-version.sh 2>/dev/null || echo "$(tr -d '[:space:]' < VERSION).0")}"
 
 echo "▸ Building the app…"
-swift build -c release --arch arm64 --arch x86_64
-BINARY="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/SmootherScroll"
+# SwiftPM stamps the binary as built with the SDK of its deployment target, and macOS then draws
+# it in the old style. Stamping the real SDK gives it the current controls and Liquid Glass.
+SDK_VERSION="$(xcrun --sdk macosx --show-sdk-version)"
+BUILD=(swift build -c release --arch arm64 --arch x86_64
+    -Xlinker -platform_version -Xlinker macos -Xlinker 14.0 -Xlinker "$SDK_VERSION")
+"${BUILD[@]}"
+BINARY="$("${BUILD[@]}" --show-bin-path)/SmootherScroll"
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
