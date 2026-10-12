@@ -51,5 +51,5 @@ jobs:
         run: |
           ditto -c -k --keepParent "build/Smoother Scroll.app" SmootherScroll.zip
           gh release create "v$VERSION" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "v$VERSION" \
-            --notes "Unzip, move **Smoother Scroll** to Applications, then run \`xattr -dr com.apple.quarantine \"/Applications/Smoother Scroll.app\"\` once: the app isn't notarized." \
+            --notes "Install or update with \`curl -fsSL https://raw.githubusercontent.com/yekta/smoother-scroll/main/scripts/install.sh | sh\`. The app isn't notarized: a copy downloaded with a browser is blocked by macOS." \
             --generate-notes SmootherScroll.zip

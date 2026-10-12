@@ -16,16 +16,17 @@ Makes a mouse wheel on the Mac scroll like a trackpad. A free, open-source alter
 
 ## Install
 
-1. Download `SmootherScroll.zip` from the [latest release](https://github.com/yekta/smoother-scroll/releases/latest), unzip it and move **Smoother Scroll** to Applications.
-2. The app isn't notarized, so remove the quarantine macOS puts on downloads once:
+Paste this in Terminal:
 
-   ```sh
-   xattr -dr com.apple.quarantine "/Applications/Smoother Scroll.app"
-   ```
+```sh
+curl -fsSL https://raw.githubusercontent.com/yekta/smoother-scroll/main/scripts/install.sh | sh
+```
 
-3. Open it and allow it under **System Settings → Privacy & Security → Accessibility**. It needs this to change the wheel's scroll events.
+It puts the latest release in Applications and opens it. Then allow it under **System Settings → Privacy & Security → Accessibility**: it needs this to change the wheel's scroll events.
 
-Every new version is a new app to macOS: after an update, remove Smoother Scroll from the Accessibility list with − and add it again. **Check for Updates…** in its menu says when there is one.
+The app isn't notarized, so a copy downloaded with a browser is blocked by macOS and hangs when opened. If that happened, quit it with `killall -9 SmootherScroll` and use the command above.
+
+**Check for Updates…** in its menu installs new versions itself. Every new version is a new app to macOS: after an update, remove Smoother Scroll from the Accessibility list with − and add it again.
 
 ## Settings
 

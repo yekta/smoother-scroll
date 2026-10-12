@@ -44,7 +44,9 @@ SmoothScroll, under the MIT license.
   setting (Clear or Tinted, under Appearance) applies to it too. Its curve runs the animator with the settings as they are.
   While the window is open the app shows in the Dock. A screenshot of the window alone
   (`screencapture -l`) draws it over black; capture the screen around it to see the glass.
-- `UpdateChecker.swift`: compares the version with the latest GitHub release.
+- `UpdateChecker.swift`: compares the version with the latest GitHub release and installs it:
+  it downloads the zip itself, since a browser's download is quarantined and Gatekeeper blocks
+  an app that isn't notarized, then swaps the app and restarts it.
 
 ### Resources, assets and scripts
 
@@ -54,6 +56,8 @@ SmoothScroll, under the MIT license.
   the binary with the SDK it was built with: SwiftPM stamps the deployment target's, and macOS
   then draws the app in the old style, without Liquid Glass.
 - `scripts/release-version.sh`: the version of a commit: `VERSION` and the number of commits.
+- `scripts/install.sh`: installs the latest release into /Applications with curl, which leaves
+  it unquarantined. README.md tells users to install this way.
 
 ## General Rules:
 
