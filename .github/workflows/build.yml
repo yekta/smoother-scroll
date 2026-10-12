@@ -22,7 +22,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -40,7 +40,7 @@ jobs:
       - name: Zip the app
         run: ditto -c -k --keepParent "build/Smoother Scroll.app" SmootherScroll.zip
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: SmootherScroll
           path: SmootherScroll.zip
