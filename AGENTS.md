@@ -52,7 +52,8 @@ SmoothScroll, under the MIT license.
 
 - `Resources/AppIcon.icon`: the app icon, made for Icon Composer: Lucide's `mouse`, filled, white
   on Motile's dark tile. `assets/favicon.svg` is the same icon as a flat SVG.
-- `scripts/build-app.sh`: builds `build/Smoother Scroll.app`, universal, signed ad hoc. It stamps
+- `scripts/build-app.sh`: builds `build/Smoother Scroll.app`, universal, signed with the Developer
+  ID certificate named by `SIGN_IDENTITY`, or ad hoc without it. It stamps
   the binary with the SDK it was built with: SwiftPM stamps the deployment target's, and macOS
   then draws the app in the old style, without Liquid Glass.
 - `scripts/release-version.sh`: the version of a commit: `VERSION` and the number of commits.
@@ -88,7 +89,10 @@ macOS: remove the old entry under System Settings → Privacy & Security → Acc
 the new one.
 
 `build.yml` tests and builds pull requests. On `main`, `release.yml` tests, builds and publishes
-the app as a GitHub release, unsigned and not notarized.
+the app as a GitHub release. With the repository's signing secrets (`APPLE_CERTIFICATE` and
+`APPLE_CERTIFICATE_PASSWORD`, the Developer ID Application certificate as a base64 .p12 and its
+password; `APPLE_API_KEY`, `APPLE_API_KEY_ID` and `APPLE_API_ISSUER_ID`, an App Store Connect API
+key) it signs and notarizes the app; without them it signs it ad hoc.
 
 ## Commit Messages
 

@@ -4,7 +4,8 @@
 #   scripts/build-app.sh [--open]
 #
 # VERSION, if set, is the version the app says it is; otherwise scripts/release-version.sh's.
-# The app is signed ad hoc: it isn't notarized, so a downloaded copy needs its quarantine removed.
+# SIGN_IDENTITY, if set, is the Developer ID certificate the app is signed with, with the hardened
+# runtime that notarizing needs; otherwise it is signed ad hoc.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -53,6 +54,10 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-codesign --force --deep --sign - "$APP" >/dev/null
+if [ -n "${SIGN_IDENTITY:-}" ]; then
+    codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$APP"
+else
+    codesign --force --deep --sign - "$APP" >/dev/null
+fi
 echo "✓ Built $APP ($VERSION)"
 if [ "${1:-}" = "--open" ]; then open "$APP"; fi

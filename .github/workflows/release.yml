@@ -1,8 +1,9 @@
 name: Release
 
 # On every push to main that changes the app: tests it, builds it and publishes it as a GitHub
-# release. The app is signed ad hoc and not notarized. The version is the one
-# scripts/release-version.sh gives the commit.
+# release. With the signing secrets set, the app is signed with the Developer ID certificate and
+# notarized; without them, it is signed ad hoc. The version is the one scripts/release-version.sh
+# gives the commit.
 on:
   push:
     branches: [main]
@@ -25,7 +26,9 @@ concurrency:
 jobs:
   release:
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 60
+    env:
+      SIGNED: ${{ secrets.APPLE_CERTIFICATE != '' && secrets.APPLE_API_KEY != '' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -42,8 +45,44 @@ jobs:
       - name: Test
         run: swift test
 
+      - name: Import the signing certificate
+        if: env.SIGNED == 'true'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          echo "$APPLE_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security import "$RUNNER_TEMP/certificate.p12" -k "$KEYCHAIN" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
+          echo "SIGN_IDENTITY=Developer ID Application" >> "$GITHUB_ENV"
+
       - name: Build the app
         run: scripts/build-app.sh
+
+      - name: Notarize the app
+        if: env.SIGNED == 'true'
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          APP="build/Smoother Scroll.app"
+          echo "$APPLE_API_KEY" > "$RUNNER_TEMP/api-key.p8"
+          CREDENTIALS=(--key "$RUNNER_TEMP/api-key.p8" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID")
+          ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/notarize.zip"
+          SUBMISSION="$(xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" "${CREDENTIALS[@]}" --output-format json | jq -r .id)"
+          STATUS=0
+          xcrun notarytool wait "$SUBMISSION" "${CREDENTIALS[@]}" --timeout 30m || STATUS=$?
+          xcrun notarytool log "$SUBMISSION" "${CREDENTIALS[@]}" || true
+          [ "$STATUS" -eq 0 ] || exit "$STATUS"
+          xcrun stapler staple "$APP"
+          spctl --assess --type execute --verbose "$APP"
 
       - name: Publish
         env:
@@ -51,5 +90,5 @@ jobs:
         run: |
           ditto -c -k --keepParent "build/Smoother Scroll.app" SmootherScroll.zip
           gh release create "v$VERSION" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "v$VERSION" \
-            --notes "Install or update with \`curl -fsSL https://raw.githubusercontent.com/yekta/smoother-scroll/main/scripts/install.sh | sh\`. The app isn't notarized: a copy downloaded with a browser is blocked by macOS." \
+            --notes "Install or update with \`curl -fsSL https://raw.githubusercontent.com/yekta/smoother-scroll/main/scripts/install.sh | sh\`." \
             --generate-notes SmootherScroll.zip
