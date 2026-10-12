@@ -1,0 +1,55 @@
+name: Release
+
+# On every push to main that changes the app: tests it, builds it and publishes it as a GitHub
+# release. The app is signed ad hoc and not notarized. The version is the one
+# scripts/release-version.sh gives the commit.
+on:
+  push:
+    branches: [main]
+    paths:
+      - Sources/**
+      - Resources/**
+      - Package.swift
+      - VERSION
+      - scripts/**
+      - .github/workflows/release.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Version
+        run: echo "VERSION=$(scripts/release-version.sh)" >> "$GITHUB_ENV"
+
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Test
+        run: swift test
+
+      - name: Build the app
+        run: scripts/build-app.sh
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ditto -c -k --keepParent "build/Smoother Scroll.app" SmootherScroll.zip
+          gh release create "v$VERSION" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "v$VERSION" \
+            --notes "Unzip, move **Smoother Scroll** to Applications, then run \`xattr -dr com.apple.quarantine \"/Applications/Smoother Scroll.app\"\` once: the app isn't notarized." \
+            --generate-notes SmootherScroll.zip
