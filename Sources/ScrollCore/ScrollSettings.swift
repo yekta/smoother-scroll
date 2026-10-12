@@ -14,23 +14,26 @@ public struct ExcludedApp: Codable, Hashable, Identifiable, Sendable {
     }
 }
 
-/// Everything the user can tune. A setting missing from what was saved takes its default, so
-/// adding one never resets the others.
+/// Everything the user can tune; the defaults start from a SmoothScroll setup. A setting missing
+/// from what was saved takes its default, so adding one never resets the others.
 public struct ScrollSettings: Codable, Equatable, Sendable {
     public var enabled = true
     /// Points one notch of the wheel scrolls.
     public var stepSize: Double = 250
-    /// Milliseconds one notch takes to settle.
+    /// Milliseconds one notch's animation lasts.
     public var animationTime: Double = 350
-    /// How much longer the easing out of a notch is than the easing in.
-    public var tailToHeadRatio: Double = 2
-    /// 0 is off; 1 roughly doubles a notch at 45 notches a second.
+    /// How much a fast spin speeds each notch up: 0 is off, 1 the default, 2 twice as much.
     public var acceleration: Double = 1
-    public var maxAcceleration: Double = 10
-    /// 0 is off; how long a fast spin glides on once the wheel stops, like a trackpad flick.
-    public var momentum: Double = 0.5
+    /// The most a notch can be multiplied by.
+    public var accelerationMax: Double = 20
+    /// How much longer a notch eases out than in.
+    public var tailToHeadRatio: Double = 2
+    /// Ease each notch in and out; without it a notch moves at one speed.
+    public var easing = true
+    /// 0 is off; how long a fast spin glides on after the wheel stops, like a trackpad flick.
+    public var momentum: Double = 0
     /// Sends the scroll phases a trackpad sends, so views rubber-band at their edges.
-    public var trackpadPhases = true
+    public var trackpadPhases = false
     public var smoothHorizontal = true
     public var reverseDirection = false
     public var excludedApps: [ExcludedApp] = []
@@ -46,9 +49,10 @@ public struct ScrollSettings: Codable, Equatable, Sendable {
         enabled = value(.enabled, defaults.enabled)
         stepSize = value(.stepSize, defaults.stepSize)
         animationTime = value(.animationTime, defaults.animationTime)
-        tailToHeadRatio = value(.tailToHeadRatio, defaults.tailToHeadRatio)
         acceleration = value(.acceleration, defaults.acceleration)
-        maxAcceleration = value(.maxAcceleration, defaults.maxAcceleration)
+        accelerationMax = value(.accelerationMax, defaults.accelerationMax)
+        tailToHeadRatio = value(.tailToHeadRatio, defaults.tailToHeadRatio)
+        easing = value(.easing, defaults.easing)
         momentum = value(.momentum, defaults.momentum)
         trackpadPhases = value(.trackpadPhases, defaults.trackpadPhases)
         smoothHorizontal = value(.smoothHorizontal, defaults.smoothHorizontal)
@@ -57,11 +61,11 @@ public struct ScrollSettings: Codable, Equatable, Sendable {
     }
 
     public static let ranges = (
-        stepSize: 20.0...600.0,
-        animationTime: 80.0...1000.0,
-        tailToHeadRatio: 1.0...6.0,
-        acceleration: 0.0...3.0,
-        maxAcceleration: 1.0...250.0,
+        stepSize: 10.0...1000.0,
+        animationTime: 50.0...1500.0,
+        acceleration: 0.0...2.0,
+        accelerationMax: 1.0...50.0,
+        tailToHeadRatio: 0.0...10.0,
         momentum: 0.0...1.0
     )
 }

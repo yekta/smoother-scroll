@@ -33,12 +33,13 @@ public struct ScrollOutput: Equatable, Sendable {
     public var moves: Bool { dx != 0 || dy != 0 }
 }
 
-/// Turns wheel notches into the smooth motion a trackpad would make.
+/// Turns wheel notches into smooth scrolling, the way SmoothScroll does.
 ///
-/// Each notch moves a target; the content follows it through two lags, which ease the notch in
-/// and out and land exactly on it. A fast spin also leaves a glide behind: a speed that decays
-/// like a trackpad's momentum, which the content keeps to when it is faster than the notches.
-/// While notches arrive the events are a trackpad gesture; once they stop, its momentum.
+/// Each notch is a pulse: its step, eased over the animation time. Pulses add up, so notches that
+/// come quickly overlap and the page keeps moving. A notch the other way drops what is left of
+/// them. With momentum on, a fast spin also leaves a glide that decays like a trackpad's, which
+/// the page keeps to while it is faster than the pulses. With trackpad phases on, the events are a
+/// trackpad gesture while notches arrive and its momentum once they stop.
 public struct ScrollAnimator: Sendable {
     enum State: Sendable {
         case idle
@@ -46,10 +47,25 @@ public struct ScrollAnimator: Sendable {
         case gliding
     }
 
-    var x = AxisMotion()
-    var y = AxisMotion()
-    var state = State.idle
+    struct Pulse: Sendable {
+        var dx: Double
+        var dy: Double
+        var start: Double
+    }
+
+    var pulses: [Pulse] = []
+    /// What finished pulses moved.
+    var finished = (x: 0.0, y: 0.0)
+    var position = (x: 0.0, y: 0.0)
+    var posted = (x: 0.0, y: 0.0)
+    var glide = (x: 0.0, y: 0.0)
+    var glideShare = 0.0
+    var direction = (x: 0.0, y: 0.0)
+    /// When the mouse sent the spin's last few notches, by its own clock.
+    var recent: [Double] = []
+    var mouseClock = 0.0
     var lastNotch = -Double.infinity
+    var state = State.idle
     var releaseDelay = 0.2
     var needsBegin = false
     var needsMomentumBegin = false
@@ -61,12 +77,42 @@ public struct ScrollAnimator: Sendable {
     public var isIdle: Bool { state == .idle && pending.isEmpty }
 
     /// A wheel event: `dx` and `dy` are notches, positive up and left like the event's deltas.
-    public mutating func notch(dx: Double, dy: Double, at now: Double, tuning: ScrollTuning) {
+    /// `sinceLastNotch`, when known, is how long after the last notch the mouse sent this one.
+    public mutating func notch(dx: Double, dy: Double, at now: Double, sinceLastNotch: Double? = nil, tuning: ScrollTuning) {
         guard dx != 0 || dy != 0 else { return }
         if state == .idle {
             time = now
         }
         let at = max(now, time)
+        let reversed = (dx != 0 && direction.x != 0 && dx.sign != direction.x.sign)
+            || (dy != 0 && direction.y != 0 && dy.sign != direction.y.sign)
+        if reversed {
+            stopMotion(tuning: tuning)
+        }
+        if dx != 0 {
+            direction.x = dx
+        }
+        if dy != 0 {
+            direction.y = dy
+        }
+
+        let elapsed = lastNotch.isFinite ? sinceLastNotch ?? (at - lastNotch) : .infinity
+        if elapsed > ScrollTuning.spinWindow {
+            recent.removeAll()
+        }
+        mouseClock += elapsed.isFinite ? max(elapsed, 0) : 0
+        recent.append(mouseClock)
+        if recent.count > 5 {
+            recent.removeFirst()
+        }
+        lastNotch = at
+
+        let rate = Self.rate(of: recent)
+        let multiplier = tuning.multiplier(rate: rate)
+        pulses.append(Pulse(dx: dx * tuning.stepSize * multiplier, dy: dy * tuning.stepSize * multiplier, start: at))
+        glideShare = tuning.glideShare(rate: rate)
+        releaseDelay = rate > 0 ? min(max(3 / rate, 0.1), 0.2) : 0.2
+
         if state == .gliding {
             pending.append(ScrollOutput(dx: 0, dy: 0, phase: .none, momentum: .ended))
         }
@@ -74,15 +120,6 @@ public struct ScrollAnimator: Sendable {
             needsBegin = true
         }
         state = .dragging
-        if dx != 0 {
-            x.notch(dx, at: at, tuning: tuning)
-        }
-        if dy != 0 {
-            y.notch(dy, at: at, tuning: tuning)
-        }
-        let rate = max(x.rate, y.rate)
-        releaseDelay = rate > 0 ? min(max(3 / rate, 0.1), 0.2) : 0.2
-        lastNotch = at
     }
 
     /// Moves the content on to `now` and returns the events that say so.
@@ -96,17 +133,16 @@ public struct ScrollAnimator: Sendable {
 
         let elapsed = min(max(now - time, 0), 0.1)
         if elapsed > 0 {
-            let steps = max(1, Int((elapsed / 0.001).rounded(.up)))
+            let steps = max(1, Int((elapsed / 0.002).rounded(.up)))
             let h = elapsed / Double(steps)
-            for _ in 0..<steps {
-                x.step(h, tuning: tuning)
-                y.step(h, tuning: tuning)
+            for step in 1...steps {
+                move(to: time + h * Double(step), h: h, tuning: tuning)
             }
         }
         time = max(time, now)
 
-        let frame = ScrollOutput(dx: x.take(), dy: y.take(), phase: .none, momentum: .none)
-        let settled = x.isSettled && y.isSettled
+        let frame = ScrollOutput(dx: take(\.x), dy: take(\.y), phase: .none, momentum: .none)
+        let settled = pulses.isEmpty && glide == (0, 0)
         switch state {
         case .dragging:
             if needsBegin {
@@ -153,18 +189,81 @@ public struct ScrollAnimator: Sendable {
         default:
             break
         }
-        x.stop()
-        y.stop()
+        stopMotion(tuning: tuning)
+        recent.removeAll()
         finish()
         return shaped(out, tuning: tuning)
+    }
+
+    /// Notches a second over the spin's last few notches; nothing for a notch on its own. Notches
+    /// closer than `closestNotches` count as that far apart.
+    static func rate(of times: [Double]) -> Double {
+        guard times.count >= 2, let first = times.first, let last = times.last else { return 0 }
+        let intervals = Double(times.count - 1)
+        return intervals / max(last - first, ScrollTuning.closestNotches * intervals)
+    }
+
+    private mutating func move(to now: Double, h: Double, tuning: ScrollTuning) {
+        let before = base(at: now - h, tuning: tuning)
+        let after = base(at: now, tuning: tuning)
+        position.x += step(base: after.x - before.x, glide: &glide.x, h: h, tuning: tuning)
+        position.y += step(base: after.y - before.y, glide: &glide.y, h: h, tuning: tuning)
+
+        let done = pulses.filter { now - $0.start >= tuning.duration }
+        guard !done.isEmpty else { return }
+        finished.x += done.reduce(0) { $0 + $1.dx }
+        finished.y += done.reduce(0) { $0 + $1.dy }
+        pulses.removeAll { now - $0.start >= tuning.duration }
+    }
+
+    /// Where the pulses have the page at `time`.
+    private func base(at time: Double, tuning: ScrollTuning) -> (x: Double, y: Double) {
+        pulses.reduce(finished) { sum, pulse in
+            let eased = tuning.ease((time - pulse.start) / tuning.duration)
+            return (sum.x + pulse.dx * eased, sum.y + pulse.dy * eased)
+        }
+    }
+
+    /// One axis's move over `h`: the pulses', or the glide's while it is faster.
+    private func step(base: Double, glide: inout Double, h: Double, tuning: ScrollTuning) -> Double {
+        guard tuning.momentumEnabled else { return base }
+        let speed = base / h
+        if glide != 0 {
+            let decay = tuning.friction * tuning.glideTime
+            let magnitude = max(0, (abs(glide) + decay) * exp(-h / tuning.glideTime) - decay)
+            glide = magnitude < 1 ? 0 : magnitude * (glide > 0 ? 1 : -1)
+        }
+        if abs(glideShare * speed) > abs(glide), glide == 0 || glide.sign == speed.sign {
+            glide = glideShare * speed
+        }
+        guard abs(glide) > abs(speed) else { return base }
+        return glide * h
+    }
+
+    /// Drops what is left of the motion where it is.
+    private mutating func stopMotion(tuning: ScrollTuning) {
+        finished = base(at: time, tuning: tuning)
+        pulses.removeAll()
+        glide = (0, 0)
+        lastNotch = -.infinity
+    }
+
+    private mutating func take(_ axis: WritableKeyPath<(x: Double, y: Double), Double>) -> Int32 {
+        let rounded = position[keyPath: axis].rounded()
+        let delta = rounded - posted[keyPath: axis]
+        posted[keyPath: axis] = rounded
+        return Int32(clamping: Int(delta))
     }
 
     private mutating func finish() {
         state = .idle
         needsBegin = false
         needsMomentumBegin = false
-        x.rebase()
-        y.rebase()
+        pulses.removeAll()
+        finished = (0, 0)
+        position = (0, 0)
+        posted = (0, 0)
+        glide = (0, 0)
     }
 
     private func with(_ frame: ScrollOutput, phase: ScrollPhase = .none, momentum: MomentumPhase = .none) -> ScrollOutput {
@@ -175,100 +274,5 @@ public struct ScrollAnimator: Sendable {
     private func shaped(_ outputs: [ScrollOutput], tuning: ScrollTuning) -> [ScrollOutput] {
         guard !tuning.phases else { return outputs }
         return outputs.filter(\.moves).map { ScrollOutput(dx: $0.dx, dy: $0.dy, phase: .none, momentum: .none) }
-    }
-}
-
-struct AxisMotion: Sendable {
-    var target = 0.0
-    var head = 0.0
-    var base = 0.0
-    var position = 0.0
-    var posted = 0.0
-    var glideSpeed = 0.0
-    var glideShare = 0.0
-    var direction = 0.0
-    /// The last few notches of this spin. Events can arrive bunched, so its speed is measured
-    /// over several of them, never between two.
-    var recent: [(time: Double, amount: Double)] = []
-    /// Notches a second.
-    var rate = 0.0
-
-    var isSettled: Bool {
-        abs(target - base) < 0.5 && abs(target - head) < 0.5 && glideSpeed == 0
-    }
-
-    mutating func notch(_ amount: Double, at time: Double, tuning: ScrollTuning) {
-        let sign: Double = amount > 0 ? 1 : -1
-        if direction != 0, sign != direction {
-            stop()
-        }
-        if let last = recent.last, time - last.time > ScrollTuning.spinWindow {
-            recent.removeAll()
-        }
-        recent.append((time, abs(amount)))
-        if recent.count > 6 {
-            recent.removeFirst()
-        }
-        rate = Self.rate(of: recent)
-        direction = sign
-        glideShare = tuning.glideShare(rate: rate)
-        target += amount * tuning.stepSize * tuning.multiplier(rate: rate)
-    }
-
-    /// Drops what is left of the motion where it is.
-    mutating func stop() {
-        target = base
-        head = base
-        glideSpeed = 0
-        rate = 0
-        recent.removeAll()
-    }
-
-    /// Notches a second over a spin's last notches; nothing until there are three.
-    static func rate(of notches: [(time: Double, amount: Double)]) -> Double {
-        guard notches.count >= 3, let first = notches.first, let last = notches.last else { return 0 }
-        let amount = notches.dropFirst().reduce(0) { $0 + $1.amount }
-        let span = max(last.time - first.time, 0.005 * Double(notches.count - 1))
-        return amount / span
-    }
-
-    mutating func step(_ h: Double, tuning: ScrollTuning) {
-        let before = base
-        head += (target - head) * (1 - exp(-h / tuning.head))
-        base += (head - base) * (1 - exp(-h / tuning.tail))
-        let baseStep = base - before
-        let baseSpeed = baseStep * direction / h
-
-        if glideSpeed > 0 {
-            let decay = tuning.friction * tuning.glideTime
-            glideSpeed = max(0, (glideSpeed + decay) * exp(-h / tuning.glideTime) - decay)
-        }
-        glideSpeed = max(glideSpeed, glideShare * baseSpeed)
-        position += glideSpeed > baseSpeed ? glideSpeed * h * direction : baseStep
-
-        if abs(target - base) < 0.5, abs(target - head) < 0.5, glideSpeed < 1 {
-            position += target - base
-            base = target
-            head = target
-            glideSpeed = 0
-        }
-    }
-
-    /// The whole points moved since the last call.
-    mutating func take() -> Int32 {
-        let rounded = position.rounded()
-        let delta = rounded - posted
-        posted = rounded
-        return Int32(clamping: Int(delta))
-    }
-
-    /// Starts the next gesture from zero, keeping how fast the wheel was spinning.
-    mutating func rebase() {
-        target = 0
-        head = 0
-        base = 0
-        position = 0
-        posted = 0
-        glideSpeed = 0
     }
 }
