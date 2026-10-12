@@ -6,8 +6,10 @@ public struct ScrollTuning: Equatable, Sendable {
     public var stepSize: Double
     public var acceleration: Double
     public var accelerationMax: Double
-    public var easing: Bool
-    /// SmoothScroll's pulse: the first 1/`pulseScale` of a notch eases in, the rest eases out.
+    public var easeIn: Bool
+    public var easeOut: Bool
+    /// SmoothScroll's pulse, for easing in and out: the first 1/`pulseScale` of a notch eases in,
+    /// the rest eases out.
     public var pulseScale: Double
     public var pulseNormalize: Double
     /// How fast a glide slows: its speed decays over `glideTime` and loses `friction` points per
@@ -29,7 +31,8 @@ public struct ScrollTuning: Equatable, Sendable {
         stepSize = settings.stepSize
         acceleration = max(settings.acceleration, 0)
         accelerationMax = max(settings.accelerationMax, 1)
-        easing = settings.easing
+        easeIn = settings.easeIn
+        easeOut = settings.easeOut
         pulseScale = 1 + max(settings.tailToHeadRatio, 0)
         pulseNormalize = 1
         momentumEnabled = settings.momentum > 0
@@ -39,11 +42,25 @@ public struct ScrollTuning: Equatable, Sendable {
         pulseNormalize = 1 / pulse(1)
     }
 
+    /// How steeply a notch eases out on its own: it ends at e⁻⁴, 2%, of its starting speed.
+    static let easeOutSteepness = 4.0
+
     /// How far into its step a notch is, `progress` of the way through its animation.
     public func ease(_ progress: Double) -> Double {
         let progress = min(max(progress, 0), 1)
-        guard easing, progress < 1 else { return progress }
-        return pulse(progress) * pulseNormalize
+        guard progress < 1 else { return 1 }
+        switch (easeIn, easeOut) {
+        case (true, true): return pulse(progress) * pulseNormalize
+        case (false, true): return Self.decelerate(progress)
+        case (true, false): return 1 - Self.decelerate(1 - progress)
+        case (false, false): return progress
+        }
+    }
+
+    /// Starts at full speed and slows exponentially to nearly nothing.
+    private static func decelerate(_ progress: Double) -> Double {
+        let k = easeOutSteepness
+        return (1 - exp(-k * progress)) / (1 - exp(-k))
     }
 
     /// Michael Herf's viscous fluid pulse, as SmoothScroll uses it.

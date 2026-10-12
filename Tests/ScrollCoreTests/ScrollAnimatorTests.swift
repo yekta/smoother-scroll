@@ -51,14 +51,28 @@ private var withTrackpadExtras: ScrollSettings {
     #expect(lastMove <= 0.35 + frame)
 }
 
-@Test func aNotchFollowsThePulse() {
+@Test func aNotchFollowsItsEasing() {
     let tuning = ScrollTuning(ScrollSettings())
     let halfway = run(notches: [0], until: 0.175 + frame / 2)
     #expect(abs(Double(total(halfway)) - 250 * tuning.ease(0.5)) <= 1)
     #expect(tuning.ease(0) == 0)
     #expect(tuning.ease(1) == 1)
-    #expect(tuning.ease(0.1) < 0.1)
-    #expect(tuning.ease(0.5) > 0.5)
+}
+
+@Test func byDefaultANotchStartsAtFullSpeedAndEasesOut() {
+    let tuning = ScrollTuning(ScrollSettings())
+    #expect(tuning.ease(0.05) > 0.15)
+    #expect(tuning.ease(0.95) > 0.99)
+}
+
+@Test func easingInStartsSlowly() {
+    var settings = ScrollSettings()
+    settings.easeIn = true
+    #expect(ScrollTuning(settings).ease(0.05) < 0.05)
+    settings.easeOut = false
+    #expect(ScrollTuning(settings).ease(0.95) < 0.9)
+    settings.easeIn = false
+    #expect(ScrollTuning(settings).ease(0.3) == 0.3)
 }
 
 @Test func motionNeverGoesBackwards() {

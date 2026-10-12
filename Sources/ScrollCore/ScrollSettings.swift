@@ -26,10 +26,12 @@ public struct ScrollSettings: Codable, Equatable, Sendable {
     public var acceleration: Double = 1
     /// The most a notch can be multiplied by.
     public var accelerationMax: Double = 20
-    /// How much longer a notch eases out than in.
+    /// A notch starts slowly instead of at full speed. Off by default: it feels heavy.
+    public var easeIn = false
+    /// A notch slows down to a stop instead of stopping at full speed.
+    public var easeOut = true
+    /// With both, how much longer a notch eases out than in.
     public var tailToHeadRatio: Double = 2
-    /// Ease each notch in and out; without it a notch moves at one speed.
-    public var easing = true
     /// 0 is off; how long a fast spin glides on after the wheel stops, like a trackpad flick.
     public var momentum: Double = 0
     /// Sends the scroll phases a trackpad sends, so views rubber-band at their edges.
@@ -51,8 +53,9 @@ public struct ScrollSettings: Codable, Equatable, Sendable {
         animationTime = value(.animationTime, defaults.animationTime)
         acceleration = value(.acceleration, defaults.acceleration)
         accelerationMax = value(.accelerationMax, defaults.accelerationMax)
+        easeIn = value(.easeIn, defaults.easeIn)
+        easeOut = value(.easeOut, defaults.easeOut)
         tailToHeadRatio = value(.tailToHeadRatio, defaults.tailToHeadRatio)
-        easing = value(.easing, defaults.easing)
         momentum = value(.momentum, defaults.momentum)
         trackpadPhases = value(.trackpadPhases, defaults.trackpadPhases)
         smoothHorizontal = value(.smoothHorizontal, defaults.smoothHorizontal)
