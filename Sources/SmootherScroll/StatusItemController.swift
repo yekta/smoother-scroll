@@ -43,7 +43,10 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSPopoverDelegate {
         guard let button = item.button, !panel.isShown else { return }
         NSApp.activate()
         panel.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-        panel.contentViewController?.view.window?.makeFirstResponder(nil)
+        // Unless its window is key, the panel's controls draw in their inactive grey.
+        guard let window = panel.contentViewController?.view.window else { return }
+        window.makeKey()
+        window.makeFirstResponder(nil)
     }
 
     @objc private func clicked(_ sender: NSStatusBarButton) {

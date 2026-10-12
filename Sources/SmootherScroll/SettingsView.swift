@@ -44,7 +44,6 @@ struct SettingsView: View {
             }
 
             Section {
-                FeelChart(settings: model.settings)
                 ValueSlider("Glide after fast spins", value: $model.settings.momentum, in: ScrollSettings.ranges.momentum, step: 0.05) {
                     level($0, ["Short": 0, "Medium": 0.3, "Long": 0.7])
                 }
@@ -55,7 +54,7 @@ struct SettingsView: View {
             } header: {
                 Text("Like a Trackpad")
             } footer: {
-                Text("Both off by default. The curve shows how fast a page moves after one notch and after a fast spin.")
+                Text("Both off by default.")
                     .settingsFooter()
             }
 
@@ -190,103 +189,6 @@ private struct AccessSection: View {
                 Button("Open System Settings") { model.requestAccess() }
                     .buttonStyle(.borderedProminent)
             }
-        }
-    }
-}
-
-/// How fast the page moves after one notch and after a fast spin, with the settings as they are.
-private struct FeelChart: View {
-    let settings: ScrollSettings
-
-    private static let duration = 2.4
-
-    var body: some View {
-        let tuning = ScrollTuning(settings)
-        let notch = Self.speeds(notches: [0.05], tuning: tuning)
-        let spin = Self.speeds(notches: (0..<8).map { 0.05 + Double($0) / 15 }, tuning: tuning)
-
-        VStack(alignment: .leading, spacing: 8) {
-            ZStack(alignment: .bottom) {
-                Curve(values: spin, closed: true)
-                    .fill(LinearGradient(colors: [.purple.opacity(0.25), .purple.opacity(0)], startPoint: .top, endPoint: .bottom))
-                Curve(values: spin, closed: false)
-                    .stroke(.purple, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                Curve(values: notch, closed: true)
-                    .fill(LinearGradient(colors: [Color.accentColor.opacity(0.25), Color.accentColor.opacity(0)], startPoint: .top, endPoint: .bottom))
-                Curve(values: notch, closed: false)
-                    .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                Divider()
-            }
-            .frame(height: 84)
-            HStack(spacing: 14) {
-                Legend(color: .accentColor, text: "One notch")
-                Legend(color: .purple, text: "Fast spin")
-                Spacer()
-                Text("2 seconds")
-                    .foregroundStyle(.secondary)
-            }
-            .font(.caption)
-        }
-        .padding(.vertical, 4)
-    }
-
-    /// Each curve is scaled to its own peak: the shapes are what matter, not the distances.
-    private static func speeds(notches: [Double], tuning: ScrollTuning) -> [Double] {
-        let frame = 1.0 / 120
-        var animator = ScrollAnimator()
-        var next = 0
-        var deltas: [Double] = []
-        for index in 0..<Int(duration / frame) {
-            let time = Double(index) * frame
-            while next < notches.count, notches[next] <= time {
-                animator.notch(dx: 0, dy: 1, at: notches[next], tuning: tuning)
-                next += 1
-            }
-            let moved = animator.advance(to: time, tuning: tuning).reduce(0) { $0 + Double($1.dy) }
-            deltas.append(moved)
-        }
-        let smoothed = deltas.indices.map { index in
-            let window = deltas[max(0, index - 5)...min(deltas.count - 1, index + 5)]
-            return window.reduce(0, +) / Double(window.count)
-        }
-        let peak = max(smoothed.max() ?? 1, 0.001)
-        return smoothed.map { $0 / peak }
-    }
-}
-
-private struct Curve: Shape {
-    let values: [Double]
-    let closed: Bool
-
-    func path(in rect: CGRect) -> Path {
-        Path { path in
-            guard values.count > 1 else { return }
-            let step = rect.width / CGFloat(values.count - 1)
-            let point = { (index: Int) in
-                CGPoint(x: rect.minX + CGFloat(index) * step, y: rect.maxY - CGFloat(values[index]) * rect.height * 0.92)
-            }
-            path.move(to: closed ? CGPoint(x: rect.minX, y: rect.maxY) : point(0))
-            for index in values.indices {
-                path.addLine(to: point(index))
-            }
-            guard closed else { return }
-            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-            path.closeSubpath()
-        }
-    }
-}
-
-private struct Legend: View {
-    let color: Color
-    let text: String
-
-    var body: some View {
-        HStack(spacing: 5) {
-            Capsule()
-                .fill(color)
-                .frame(width: 12, height: 3)
-            Text(text)
-                .foregroundStyle(.secondary)
         }
     }
 }

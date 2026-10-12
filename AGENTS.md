@@ -40,10 +40,12 @@ SmoothScroll, under the MIT license.
   needs and which is checked every second.
 - `StatusItemController.swift`: the menu bar item, drawn from Lucide's `mouse` (`LucideMouse.swift`).
   A click drops the settings down from it in a popover; a right click shows a short menu. The
-  popover's size is fixed before it shows: one that resizes as it opens lands off screen.
-- `SettingsView.swift`: the settings, a grouped SwiftUI form of stock controls with plain names.
-  Its curve runs the animator with the settings as they are. A screenshot of a window alone
-  (`screencapture -l`) draws it over black; capture the screen around it to see the glass.
+  popover's size is fixed before it shows (one that resizes as it opens lands off screen), and
+  its window is made key, or its controls draw in their inactive grey.
+- `SettingsView.swift`: the settings, a grouped SwiftUI form of stock controls with plain names,
+  nothing drawn of our own. For a screenshot, open the panel with a real click on the menu bar
+  item (opened any other way it shows inactive, in grey) and capture the screen around it:
+  `screencapture -l` draws a window alone over black, without its glass.
 - `Updater.swift`: checks the latest GitHub release at launch and every six hours. A newer one
   shows at the top of the menu and in the settings; installing it downloads the zip, checks it
   is signed by the team (44R7KF7645), swaps the app and restarts it.

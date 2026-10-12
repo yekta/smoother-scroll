@@ -4,14 +4,14 @@
 
 Makes a mouse wheel on the Mac scroll like a trackpad. A free, open-source alternative to SmoothScroll, under the MIT license.
 
-<img src="docs/settings.png" width="470" alt="The settings, dropped down from the menu bar">
+<img src="docs/settings.png" width="460" alt="The settings, dropped down from the menu bar">
 
 - **Smooth notches.** Each notch eases in and out over a fixed time and lands exactly its distance, in points instead of lines, the way SmoothScroll does. A notch the other way stops what is left.
 - **Speed matters.** How fast the wheel spins is measured from the mouse's own timestamps over the last few notches: a notch at a time moves exactly its distance, a fast spin covers far more ground.
 - **Like a trackpad, if you want.** Off by default: a fast spin can glide on after the wheel stops, and pages can bounce at their ends.
 - **Leaves the rest alone.** Trackpads and the Magic Mouse scroll as they did. Scrolling with ⌘, ⌥ or ⌃ held goes to the app as it was, for zooming. Shift scrolls sideways.
 - **Per app.** Turn it off for apps that want the wheel's own steps, like CAD and 3D tools, from the menu bar or the settings.
-- **Native.** A menu bar app: its settings drop down from the menu bar, in stock macOS controls, with a curve of how your settings scroll. It starts at login.
+- **Native.** A menu bar app: its settings drop down from the menu bar, in stock macOS controls. It starts at login.
 
 ## Install
 
@@ -35,7 +35,7 @@ Then allow it under **System Settings → Privacy & Security → Accessibility**
 | Glide after fast spins | Off by default. A fast spin keeps going after the wheel stops, like a flick on a trackpad |
 | Bounce at page ends | Off by default. Sends a trackpad's gestures, so pages stretch past their ends and spring back |
 
-The defaults are a SmoothScroll setup (250 px steps over 350 ms, tail to head ratio 2) with a trackpad's momentum added.
+The defaults are a SmoothScroll setup: 250 pt per notch over 350 ms, easing out twice as long as in.
 
 ## Building
 
