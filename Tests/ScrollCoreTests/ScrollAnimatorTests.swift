@@ -59,20 +59,38 @@ private var withTrackpadExtras: ScrollSettings {
     #expect(tuning.ease(1) == 1)
 }
 
-@Test func byDefaultANotchEasesInAndOut() {
+@Test func byDefaultANotchFollowsApplesEaseInEaseOut() {
     let tuning = ScrollTuning(ScrollSettings())
-    #expect(tuning.ease(0.05) < 0.05)
-    #expect(tuning.ease(0.5) > 0.5)
+    for x in stride(from: 0.0, through: 1.0, by: 0.05) {
+        #expect(abs(tuning.ease(x) - CubicBezier.easeInEaseOut.value(at: x)) < 1e-9)
+    }
+}
+
+@Test func applesCurvesHaveTheirKnownValues() {
+    #expect(abs(CubicBezier.easeInEaseOut.value(at: 0.5) - 0.5) < 1e-6)
+    #expect(abs(CubicBezier.easeInEaseOut.value(at: 0.25) - 0.1291) < 0.001)
+    #expect(abs(CubicBezier.easeIn.value(at: 0.5) - 0.3153) < 0.001)
+    #expect(abs(CubicBezier.easeOut.value(at: 0.5) - 0.6847) < 0.001)
+}
+
+@Test func aLongerEaseOutSlowsDownForLongerWithoutAJolt() {
+    var settings = ScrollSettings()
+    settings.tailToHeadRatio = 3
+    let tuning = ScrollTuning(settings)
+    let head = 0.25
+    let before = (tuning.ease(head) - tuning.ease(head - 1e-4)) / 1e-4
+    let after = (tuning.ease(head + 1e-4) - tuning.ease(head)) / 1e-4
+    #expect(abs(before - after) < 0.01)
+    #expect(abs(tuning.ease(head) - head) < 1e-9)
 }
 
 @Test func eachEasingCanBeTurnedOff() {
     var settings = ScrollSettings()
     settings.easeIn = false
-    #expect(ScrollTuning(settings).ease(0.05) > 0.15)
-    #expect(ScrollTuning(settings).ease(0.95) > 0.99)
+    #expect(ScrollTuning(settings).ease(0.5) == CubicBezier.easeOut.value(at: 0.5))
     settings.easeIn = true
     settings.easeOut = false
-    #expect(ScrollTuning(settings).ease(0.95) < 0.9)
+    #expect(ScrollTuning(settings).ease(0.5) == CubicBezier.easeIn.value(at: 0.5))
     settings.easeIn = false
     #expect(ScrollTuning(settings).ease(0.3) == 0.3)
 }

@@ -8,10 +8,9 @@ public struct ScrollTuning: Equatable, Sendable {
     public var accelerationMax: Double
     public var easeIn: Bool
     public var easeOut: Bool
-    /// SmoothScroll's pulse, for easing in and out: the first 1/`pulseScale` of a notch eases in,
-    /// the rest eases out.
-    public var pulseScale: Double
-    public var pulseNormalize: Double
+    /// With both easings, the share of a notch's time and distance spent speeding up; the rest is
+    /// spent slowing down. A half is Apple's ease in and out as it is.
+    public var head: Double
     /// How fast a glide slows: its speed decays over `glideTime` and loses `friction` points per
     /// second, every second, so it stops instead of crawling.
     public var glideTime: Double
@@ -35,42 +34,34 @@ public struct ScrollTuning: Equatable, Sendable {
         accelerationMax = max(settings.accelerationMax, 1)
         easeIn = settings.easeIn
         easeOut = settings.easeOut
-        pulseScale = 1 + max(settings.tailToHeadRatio, 0)
-        pulseNormalize = 1
+        head = 1 / (1 + max(settings.tailToHeadRatio, 0.1))
         momentumEnabled = settings.momentum > 0
         glideTime = 0.15 + 0.6 * min(max(settings.momentum, 0), 1)
         friction = 250
         phases = settings.trackpadPhases
-        pulseNormalize = 1 / pulse(1)
     }
 
-    /// How steeply a notch eases out on its own: it ends at e⁻⁴, 2%, of its starting speed.
-    static let easeOutSteepness = 4.0
-
-    /// How far into its step a notch is, `progress` of the way through its animation.
+    /// How far into its step a notch is, `progress` of the way through its animation: Apple's
+    /// ease in, ease out, or ease in and out.
     public func ease(_ progress: Double) -> Double {
         let progress = min(max(progress, 0), 1)
-        guard progress < 1 else { return 1 }
         switch (easeIn, easeOut) {
-        case (true, true): return pulse(progress) * pulseNormalize
-        case (false, true): return Self.decelerate(progress)
-        case (true, false): return 1 - Self.decelerate(1 - progress)
+        case (true, true): return easeInEaseOut(progress)
+        case (false, true): return CubicBezier.easeOut.value(at: progress)
+        case (true, false): return CubicBezier.easeIn.value(at: progress)
         case (false, false): return progress
         }
     }
 
-    /// Starts at full speed and slows exponentially to nearly nothing.
-    private static func decelerate(_ progress: Double) -> Double {
-        let k = easeOutSteepness
-        return (1 - exp(-k * progress)) / (1 - exp(-k))
-    }
-
-    /// Michael Herf's viscous fluid pulse, as SmoothScroll uses it.
-    private func pulse(_ progress: Double) -> Double {
-        let x = progress * pulseScale
-        guard x >= 1 else { return x - (1 - exp(-x)) }
-        let start = exp(-1.0)
-        return start + (1 - exp(-(x - 1))) * (1 - start)
+    /// Apple's ease in and out, its halves stretched so that speeding up takes `head` of the notch.
+    /// The halves meet at the same speed, as each covers as much of the distance as of the time.
+    private func easeInEaseOut(_ progress: Double) -> Double {
+        let curve = CubicBezier.easeInEaseOut
+        guard progress >= head else {
+            return 2 * head * curve.value(at: progress / head / 2)
+        }
+        let tail = (progress - head) / (1 - head)
+        return head + (1 - head) * 2 * (curve.value(at: 0.5 + tail / 2) - 0.5)
     }
 
     /// Up to this many notches a second, each moves exactly its step.

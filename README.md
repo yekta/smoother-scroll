@@ -6,7 +6,7 @@ Makes a mouse wheel on the Mac scroll like a trackpad. A free, open-source alter
 
 <img src="docs/settings.png" width="460" alt="The settings, dropped down from the menu bar">
 
-- **Smooth notches.** Each notch eases in and out over a fixed time, landing exactly its distance, in points instead of lines. Turning the wheel back stops what is left; a wheel bouncing back a tick in a fast spin doesn't.
+- **Smooth notches.** Each notch eases in and out on Apple's curves over a fixed time, landing exactly its distance, in points instead of lines. Turning the wheel back stops what is left; a wheel bouncing back a tick in a fast spin doesn't.
 - **Speed matters.** How fast the wheel spins is measured from the mouse's own timestamps over the last few notches: a notch at a time moves exactly its distance, a fast spin covers far more ground.
 - **Like a trackpad, if you want.** Off by default: a fast spin can glide on after the wheel stops, and pages can bounce at their ends.
 - **Leaves the rest alone.** Trackpads and the Magic Mouse scroll as they did. Scrolling with ⌘, ⌥ or ⌃ held goes to the app as it was, for zooming. Shift scrolls sideways.
@@ -31,7 +31,7 @@ Then allow it under **System Settings → Privacy & Security → Accessibility**
 | Duration per notch | How long one notch's movement lasts (350 ms) |
 | Speed up fast spins | How much further each notch goes as the wheel spins faster. Up to 3 notches a second, none |
 | Fastest speed-up | The most a notch can be multiplied by |
-| Ease in, Ease out | Each notch speeds up, then slows down to a stop. Ease-out length sets how many times longer the slowing down lasts (2×) |
+| Ease in, Ease out | Each notch speeds up, then slows down to a stop, on Apple's ease in and ease out curves. Ease-out length stretches the slowing down: 1× is Apple's ease in and out as it is |
 | Glide after fast spins | Off by default. A fast spin keeps going after the wheel stops, like a flick on a trackpad |
 | Bounce at page ends | Off by default. Sends a trackpad's gestures, so pages stretch past their ends and spring back |
 

@@ -18,10 +18,11 @@ SmoothScroll, under the MIT license.
 
 - `ScrollSettings.swift`: everything the user tunes, saved as JSON. A setting missing from what
   was saved takes its default.
-- `ScrollTuning.swift`: the settings turned into the numbers the animator runs on: the easing (in
-  and out, SmoothScroll's pulse, whose tail to head ratio sets how much of a notch eases out;
-  either can be turned off), the acceleration
+- `ScrollTuning.swift`: the settings turned into the numbers the animator runs on: the easing
+  (Apple's ease in, ease out, or ease in and out, whose halves the tail to head ratio stretches;
+  1 is Apple's as it is), the acceleration
   curve (none up to 3 notches a second, then growing with the spin's speed) and the glide.
+- `CubicBezier.swift`: Core Animation's timing curves, with Apple's control points.
 - `ScrollAnimator.swift`: each notch is a pulse, its step eased over the animation time; pulses
   add up, as in SmoothScroll. How fast the wheel spins is measured over the last few notches by
   the mouse's own timestamps (events reach the tap bunched), and sets each notch's multiplier. A

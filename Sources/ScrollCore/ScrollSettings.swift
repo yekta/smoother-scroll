@@ -26,12 +26,12 @@ public struct ScrollSettings: Codable, Equatable, Sendable {
     public var acceleration: Double = 1
     /// The most a notch can be multiplied by.
     public var accelerationMax: Double = 20
-    /// A notch starts slowly instead of at full speed.
+    /// A notch starts slowly instead of at full speed, on Apple's ease in.
     public var easeIn = true
-    /// A notch slows down to a stop instead of stopping at full speed.
+    /// A notch slows down to a stop instead of stopping at full speed, on Apple's ease out.
     public var easeOut = true
-    /// With both, how much longer a notch eases out than in.
-    public var tailToHeadRatio: Double = 2
+    /// With both, how much longer a notch eases out than in; 1 is Apple's ease in and out.
+    public var tailToHeadRatio: Double = 1
     /// 0 is off; how long a fast spin glides on after the wheel stops, like a trackpad flick.
     public var momentum: Double = 0
     /// Sends the scroll phases a trackpad sends, so views rubber-band at their edges.
@@ -68,7 +68,7 @@ public struct ScrollSettings: Codable, Equatable, Sendable {
         animationTime: 50.0...1500.0,
         acceleration: 0.0...2.0,
         accelerationMax: 1.0...50.0,
-        tailToHeadRatio: 0.0...10.0,
+        tailToHeadRatio: 0.5...6.0,
         momentum: 0.0...1.0
     )
 }
