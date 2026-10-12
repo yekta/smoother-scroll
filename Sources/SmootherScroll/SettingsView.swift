@@ -32,7 +32,7 @@ struct SettingsView: View {
                 ValueStepper("Fastest speed-up", value: $model.settings.accelerationMax, in: ScrollSettings.ranges.accelerationMax, step: 1)
                 Toggle(isOn: $model.settings.easeIn) {
                     Text("Ease in")
-                    Text("Each notch starts slowly. It feels heavier.")
+                    Text("Each notch gets going smoothly.")
                 }
                 Toggle(isOn: $model.settings.easeOut) {
                     Text("Ease out")

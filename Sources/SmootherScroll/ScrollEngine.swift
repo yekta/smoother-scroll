@@ -24,6 +24,7 @@ final class ScrollEngine: NSObject, @unchecked Sendable {
     private var flags: CGEventFlags = []
     private var lastNotchTimestamp: CGEventTimestamp = 0
     private var lastLookup = (time: -Double.infinity, excluded: false)
+    private let log = WheelLog()
 
     var isRunning: Bool { tap != nil }
 
@@ -87,6 +88,8 @@ final class ScrollEngine: NSObject, @unchecked Sendable {
     private func handleScroll(_ event: CGEvent) -> Unmanaged<CGEvent>? {
         let pass = Unmanaged.passUnretained(event)
         guard event.getIntegerValueField(.eventSourceUserData) != Self.marker else { return pass }
+        var smoothed: (dx: Double, dy: Double)?
+        defer { log.write(event, notch: smoothed) }
 
         let current = settings.withLock { $0 }
         let newTuning = ScrollTuning(current)
@@ -130,6 +133,7 @@ final class ScrollEngine: NSObject, @unchecked Sendable {
         let timestamp = event.timestamp
         let sinceLast = timestamp > lastNotchTimestamp ? Double(timestamp - lastNotchTimestamp) / 1e9 : nil
         lastNotchTimestamp = timestamp
+        smoothed = (dx, dy)
         animator.notch(dx: dx, dy: dy, at: CACurrentMediaTime(), sinceLastNotch: sinceLast, tuning: tuning)
         link?.isPaused = false
         return nil

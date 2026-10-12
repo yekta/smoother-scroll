@@ -18,14 +18,16 @@ SmoothScroll, under the MIT license.
 
 - `ScrollSettings.swift`: everything the user tunes, saved as JSON. A setting missing from what
   was saved takes its default.
-- `ScrollTuning.swift`: the settings turned into the numbers the animator runs on: the easing (by
-  default out only, from full speed; with ease in too, SmoothScroll's pulse, whose tail to head
-  ratio sets how much of a notch eases out), the acceleration
+- `ScrollTuning.swift`: the settings turned into the numbers the animator runs on: the easing (in
+  and out, SmoothScroll's pulse, whose tail to head ratio sets how much of a notch eases out;
+  either can be turned off), the acceleration
   curve (none up to 3 notches a second, then growing with the spin's speed) and the glide.
 - `ScrollAnimator.swift`: each notch is a pulse, its step eased over the animation time; pulses
   add up, as in SmoothScroll. How fast the wheel spins is measured over the last few notches by
   the mouse's own timestamps (events reach the tap bunched), and sets each notch's multiplier. A
-  notch the other way drops what is left. Off by default: a glide after a fast spin, like a
+  notch the other way drops what is left, unless it comes within `reversalGuard` of the last
+  one: a wheel spun fast bounces back a tick, and taking that as a reversal threw the spin's
+  distance away. Off by default: a glide after a fast spin, like a
   trackpad's momentum, and a trackpad's scroll phases (began, changed, ended, then momentum),
   so views rubber-band at their edges.
 
@@ -37,6 +39,8 @@ SmoothScroll, under the MIT license.
   replaces that. Continuous events (trackpads,
   Magic Mouse) and scrolling with ⌘, ⌥ or ⌃ held pass through; Shift turns vertical into
   horizontal. The events it posts carry `marker` so the tap lets them through.
+- `WheelLog.swift`: with `logWheelEvents` set in the app's defaults, writes what each wheel event
+  says to ~/Library/Logs/Smoother Scroll/wheel.log; README.md tells users how.
 - `AppLookup.swift`: the app under the pointer, for the disabled apps.
 - `AppModel.swift`: the settings, the login item and Accessibility access, which the engine
   needs and which is checked every second.
