@@ -1,8 +1,8 @@
 import AppKit
 import SwiftUI
 
-/// The settings window. While it is open the app shows in the Dock and the app switcher, so it
-/// can't get lost behind other windows.
+/// The settings window: the desktop shows through it, blurred, under glass cards. While it is
+/// open the app shows in the Dock and the app switcher, so it can't get lost behind other windows.
 @MainActor
 final class SettingsWindowController: NSObject, NSWindowDelegate {
     private let model: AppModel
@@ -22,12 +22,22 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
     }
 
     private func makeWindow() -> NSWindow {
-        let hosting = NSHostingController(rootView: SettingsView(model: model))
-        hosting.sizingOptions = []
-        let window = NSWindow(contentViewController: hosting)
+        let size = NSSize(width: 500, height: 760)
+        let window = NSWindow(
+            contentRect: NSRect(origin: .zero, size: size),
+            styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
         window.title = "Smoother Scroll"
-        window.styleMask = [.titled, .closable, .miniaturizable]
-        window.setContentSize(NSSize(width: 500, height: 720))
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.isMovableByWindowBackground = true
+        window.isOpaque = false
+        window.backgroundColor = .clear
+
+        window.contentView = NSHostingView(rootView: SettingsView(model: model))
+
         window.isReleasedWhenClosed = false
         window.delegate = self
         window.center()
