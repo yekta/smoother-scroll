@@ -106,8 +106,7 @@ final class ScrollEngine: NSObject, @unchecked Sendable {
             return pass
         }
 
-        var dy = notches(event, axis: .scrollWheelEventFixedPtDeltaAxis1)
-        var dx = notches(event, axis: .scrollWheelEventFixedPtDeltaAxis2)
+        var (dx, dy) = notch(of: event)
         if event.flags.contains(.maskShift), dx == 0 {
             swap(&dx, &dy)
         }
@@ -136,16 +135,21 @@ final class ScrollEngine: NSObject, @unchecked Sendable {
         return nil
     }
 
-    /// One event is one notch. macOS speeds up the wheel's own deltas; we only keep their sign,
-    /// and the fraction of a notch that high-resolution wheels send.
-    private func notches(_ event: CGEvent, axis: CGEventField) -> Double {
-        var value = event.getDoubleValueField(axis)
-        if value == 0 {
-            let line: CGEventField = axis == .scrollWheelEventFixedPtDeltaAxis1 ? .scrollWheelEventDeltaAxis1 : .scrollWheelEventDeltaAxis2
-            value = Double(event.getIntegerValueField(line))
-        }
-        guard value != 0 else { return 0 }
-        return value > 0 ? min(value, 1) : max(value, -1)
+    /// One event is one whole notch, along its main axis. macOS sends a slow notch as a fraction of
+    /// a line (about 0.1) and a fast one as many lines; taking those literally made a slow notch a
+    /// tenth of its step. How fast the wheel spins is ours to measure.
+    private func notch(of event: CGEvent) -> (dx: Double, dy: Double) {
+        let vertical = lines(event, .scrollWheelEventDeltaAxis1, .scrollWheelEventFixedPtDeltaAxis1)
+        let horizontal = lines(event, .scrollWheelEventDeltaAxis2, .scrollWheelEventFixedPtDeltaAxis2)
+        guard vertical != 0 || horizontal != 0 else { return (0, 0) }
+        guard abs(horizontal) > abs(vertical) else { return (0, vertical > 0 ? 1 : -1) }
+        return (horizontal > 0 ? 1 : -1, 0)
+    }
+
+    private func lines(_ event: CGEvent, _ whole: CGEventField, _ fraction: CGEventField) -> Double {
+        let fixed = event.getDoubleValueField(fraction)
+        guard fixed == 0 else { return fixed }
+        return Double(event.getIntegerValueField(whole))
     }
 
     private func isExcluded(at point: CGPoint) -> Bool {

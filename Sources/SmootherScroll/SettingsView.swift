@@ -30,8 +30,15 @@ struct SettingsView: View {
                     level($0, ["Gentle": 0, "Normal": 0.75, "Strong": 1.25, "Max": 1.75])
                 }
                 ValueStepper("Fastest speed-up", value: $model.settings.accelerationMax, in: ScrollSettings.ranges.accelerationMax, step: 1)
-                Toggle("Ease in and out", isOn: $model.settings.easing)
-                if model.settings.easing {
+                Toggle(isOn: $model.settings.easeIn) {
+                    Text("Ease in")
+                    Text("Each notch starts slowly. It feels heavier.")
+                }
+                Toggle(isOn: $model.settings.easeOut) {
+                    Text("Ease out")
+                    Text("Each notch slows down to a stop.")
+                }
+                if model.settings.easeIn, model.settings.easeOut {
                     ValueStepper("Ease-out length", value: $model.settings.tailToHeadRatio, in: ScrollSettings.ranges.tailToHeadRatio, step: 0.5)
                 }
                 Toggle("Smooth sideways scrolling", isOn: $model.settings.smoothHorizontal)

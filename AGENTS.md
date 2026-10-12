@@ -18,8 +18,9 @@ SmoothScroll, under the MIT license.
 
 - `ScrollSettings.swift`: everything the user tunes, saved as JSON. A setting missing from what
   was saved takes its default.
-- `ScrollTuning.swift`: the settings turned into the numbers the animator runs on: SmoothScroll's
-  pulse easing (the tail to head ratio sets how much of a notch eases out), the acceleration
+- `ScrollTuning.swift`: the settings turned into the numbers the animator runs on: the easing (by
+  default out only, from full speed; with ease in too, SmoothScroll's pulse, whose tail to head
+  ratio sets how much of a notch eases out), the acceleration
   curve (none up to 3 notches a second, then growing with the spin's speed) and the glide.
 - `ScrollAnimator.swift`: each notch is a pulse, its step eased over the animation time; pulses
   add up, as in SmoothScroll. How fast the wheel spins is measured over the last few notches by
@@ -31,8 +32,9 @@ SmoothScroll, under the MIT license.
 ### Sources/SmootherScroll
 
 - `ScrollEngine.swift`: the event tap and a display link, on one thread of their own. One wheel
-  event is one notch (macOS's own wheel acceleration is dropped; ours replaces it), timed by the
-  event's timestamp. Continuous events (trackpads,
+  event is one whole notch along its main axis, timed by the event's timestamp: macOS sends a
+  slow notch as about a tenth of a line and a fast one as many lines, and our acceleration
+  replaces that. Continuous events (trackpads,
   Magic Mouse) and scrolling with ⌘, ⌥ or ⌃ held pass through; Shift turns vertical into
   horizontal. The events it posts carry `marker` so the tap lets them through.
 - `AppLookup.swift`: the app under the pointer, for the disabled apps.
@@ -44,8 +46,9 @@ SmoothScroll, under the MIT license.
   its window is made key, or its controls draw in their inactive grey.
 - `SettingsView.swift`: the settings, a grouped SwiftUI form of stock controls with plain names,
   nothing drawn of our own. For a screenshot, open the panel with a real click on the menu bar
-  item (opened any other way it shows inactive, in grey) and capture the screen around it:
-  `screencapture -l` draws a window alone over black, without its glass.
+  item (opened any other way it shows inactive, in grey) over the bare desktop wallpaper, with
+  no windows or icons behind it, and capture the screen around it: `screencapture -l` draws a
+  window alone over black, without its glass.
 - `Updater.swift`: checks the latest GitHub release at launch and every six hours. A newer one
   shows at the top of the menu and in the settings; installing it downloads the zip, checks it
   is signed by the team (44R7KF7645), swaps the app and restarts it.
