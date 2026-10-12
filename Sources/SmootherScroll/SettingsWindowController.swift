@@ -41,25 +41,31 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         return window
     }
 
+    /// A heavy blur of the desktop under tinted glass, so the window reads as frosted, not clear.
     private func glass(around content: NSView) -> NSView {
-        if #available(macOS 26.0, *) {
-            let glass = NSGlassEffectView()
-            glass.cornerRadius = 16
-            glass.tintColor = NSColor(name: nil) { appearance in
-                let isDark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-                return isDark ? NSColor.black.withAlphaComponent(0.4) : NSColor.white.withAlphaComponent(0.6)
-            }
-            glass.contentView = content
-            return glass
+        let blur = NSVisualEffectView()
+        blur.material = .underWindowBackground
+        blur.blendingMode = .behindWindow
+        blur.state = .active
+        guard #available(macOS 26.0, *) else {
+            fill(blur, with: content)
+            return blur
         }
-        let material = NSVisualEffectView()
-        material.material = .windowBackground
-        material.blendingMode = .behindWindow
-        material.state = .active
-        content.frame = material.bounds
-        content.autoresizingMask = [.width, .height]
-        material.addSubview(content)
-        return material
+        let glass = NSGlassEffectView()
+        glass.cornerRadius = 16
+        glass.tintColor = NSColor(name: nil) { appearance in
+            let isDark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            return isDark ? NSColor.black.withAlphaComponent(0.55) : NSColor.white.withAlphaComponent(0.3)
+        }
+        glass.contentView = content
+        fill(blur, with: glass)
+        return blur
+    }
+
+    private func fill(_ container: NSView, with view: NSView) {
+        view.frame = container.bounds
+        view.autoresizingMask = [.width, .height]
+        container.addSubview(view)
     }
 
     func windowWillClose(_ notification: Notification) {
