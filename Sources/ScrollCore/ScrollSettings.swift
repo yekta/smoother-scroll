@@ -26,8 +26,8 @@ public struct ScrollSettings: Codable, Equatable, Sendable {
     public var acceleration: Double = 1
     /// The most a notch can be multiplied by.
     public var accelerationMax: Double = 20
-    /// A notch starts slowly instead of at full speed. Off by default: it feels heavy.
-    public var easeIn = false
+    /// A notch starts slowly instead of at full speed.
+    public var easeIn = true
     /// A notch slows down to a stop instead of stopping at full speed.
     public var easeOut = true
     /// With both, how much longer a notch eases out than in.

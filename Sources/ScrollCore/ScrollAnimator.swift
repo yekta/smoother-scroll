@@ -84,10 +84,15 @@ public struct ScrollAnimator: Sendable {
             time = now
         }
         let at = max(now, time)
+        let elapsed = lastNotch.isFinite ? sinceLastNotch ?? (at - lastNotch) : .infinity
         let reversed = (dx != 0 && direction.x != 0 && dx.sign != direction.x.sign)
             || (dy != 0 && direction.y != 0 && dy.sign != direction.y.sign)
         if reversed {
+            // A wheel spun fast can tick once the other way: that is the wheel bouncing, not the
+            // hand turning back, which takes longer.
+            guard elapsed >= ScrollTuning.reversalGuard else { return }
             stopMotion(tuning: tuning)
+            recent.removeAll()
         }
         if dx != 0 {
             direction.x = dx
@@ -96,7 +101,6 @@ public struct ScrollAnimator: Sendable {
             direction.y = dy
         }
 
-        let elapsed = lastNotch.isFinite ? sinceLastNotch ?? (at - lastNotch) : .infinity
         if elapsed > ScrollTuning.spinWindow {
             recent.removeAll()
         }

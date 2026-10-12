@@ -23,6 +23,8 @@ public struct ScrollTuning: Equatable, Sendable {
     public static let spinWindow = 0.4
     /// The closest two notches count as: a mouse can send two in one report.
     public static let closestNotches = 0.012
+    /// A notch the other way sooner than this after the last one is the wheel bouncing.
+    public static let reversalGuard = 0.12
     /// Notches a second where a spin starts to glide on, and where it glides fully.
     public static let glideRates = 4.0...12.0
 

@@ -59,16 +59,18 @@ private var withTrackpadExtras: ScrollSettings {
     #expect(tuning.ease(1) == 1)
 }
 
-@Test func byDefaultANotchStartsAtFullSpeedAndEasesOut() {
+@Test func byDefaultANotchEasesInAndOut() {
     let tuning = ScrollTuning(ScrollSettings())
-    #expect(tuning.ease(0.05) > 0.15)
-    #expect(tuning.ease(0.95) > 0.99)
+    #expect(tuning.ease(0.05) < 0.05)
+    #expect(tuning.ease(0.5) > 0.5)
 }
 
-@Test func easingInStartsSlowly() {
+@Test func eachEasingCanBeTurnedOff() {
     var settings = ScrollSettings()
+    settings.easeIn = false
+    #expect(ScrollTuning(settings).ease(0.05) > 0.15)
+    #expect(ScrollTuning(settings).ease(0.95) > 0.99)
     settings.easeIn = true
-    #expect(ScrollTuning(settings).ease(0.05) < 0.05)
     settings.easeOut = false
     #expect(ScrollTuning(settings).ease(0.95) < 0.9)
     settings.easeIn = false
@@ -83,12 +85,23 @@ private var withTrackpadExtras: ScrollSettings {
 }
 
 @Test func reversingStopsWhatIsLeft() {
-    let notches = spin(every: 0.06, count: 6) + [0.4]
+    let notches = spin(every: 0.06, count: 6) + [0.5]
     let direction = Array(repeating: 1.0, count: 6) + [-1]
     let events = run(notches: notches, direction: direction)
-    let after = events.filter { $0.time > 0.4 && $0.output.moves }
+    let after = events.filter { $0.time > 0.5 && $0.output.moves }
     #expect(!after.isEmpty)
     #expect(after.allSatisfy { $0.output.dy < 0 })
+}
+
+@Test func aBounceTheOtherWayInAFastSpinIsIgnored() {
+    var notches = spin(every: 0.03, count: 20)
+    var direction = Array(repeating: 1.0, count: 20)
+    notches.insert(0.31, at: 11)
+    direction.insert(-1, at: 11)
+    let clean = total(run(notches: spin(every: 0.03, count: 20)))
+    let events = run(notches: notches, direction: direction)
+    #expect(events.allSatisfy { $0.output.dy >= 0 })
+    #expect(abs(total(events) - clean) < clean / 20)
 }
 
 @Test func byDefaultNothingMovesAfterTheLastNotchEnds() {
