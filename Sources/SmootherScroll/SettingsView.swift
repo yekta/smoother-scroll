@@ -3,7 +3,10 @@ import ScrollCore
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// The settings panel that drops down from the menu bar item.
 struct SettingsView: View {
+    static let size = NSSize(width: 420, height: 640)
+
     @Bindable var model: AppModel
 
     var body: some View {
@@ -16,48 +19,47 @@ struct SettingsView: View {
                 AccessSection(model: model)
             }
 
-            Section("Feel") {
-                FeelChart(settings: model.settings)
-            }
-
             Section {
-                ValueSlider("Step size", value: $model.settings.stepSize, in: ScrollSettings.ranges.stepSize, step: 10) {
-                    "\(Int($0)) px"
+                ValueSlider("Distance per notch", value: $model.settings.stepSize, in: ScrollSettings.ranges.stepSize, step: 10) {
+                    "\(Int($0)) pt"
                 }
-                ValueSlider("Animation time", value: $model.settings.animationTime, in: ScrollSettings.ranges.animationTime, step: 10) {
+                ValueSlider("Duration per notch", value: $model.settings.animationTime, in: ScrollSettings.ranges.animationTime, step: 10) {
                     "\(Int($0)) ms"
                 }
-                ValueSlider("Acceleration", value: $model.settings.acceleration, in: ScrollSettings.ranges.acceleration, step: 0.1) {
-                    level($0, ["Low": 0, "Medium": 0.6, "High": 1.4, "Max": 2.2])
+                ValueSlider("Speed up fast spins", value: $model.settings.acceleration, in: ScrollSettings.ranges.acceleration, step: 0.1) {
+                    level($0, ["Gentle": 0, "Normal": 0.75, "Strong": 1.25, "Max": 1.75])
                 }
-                ValueSlider("Momentum", value: $model.settings.momentum, in: ScrollSettings.ranges.momentum, step: 0.05) {
-                    level($0, ["Short": 0, "Medium": 0.3, "Long": 0.7])
+                ValueStepper("Fastest speed-up", value: $model.settings.accelerationMax, in: ScrollSettings.ranges.accelerationMax, step: 1)
+                Toggle("Ease in and out", isOn: $model.settings.easing)
+                if model.settings.easing {
+                    ValueStepper("Ease-out length", value: $model.settings.tailToHeadRatio, in: ScrollSettings.ranges.tailToHeadRatio, step: 0.5)
                 }
+                Toggle("Smooth sideways scrolling", isOn: $model.settings.smoothHorizontal)
+                Toggle("Reverse wheel direction", isOn: $model.settings.reverseDirection)
             } header: {
                 Text("Scrolling")
             } footer: {
-                Text("Acceleration covers more ground when the wheel spins fast. Momentum lets a fast spin glide on after the wheel stops, like a flick on a trackpad.")
+                Text("A notch at a time moves exactly its distance; spin faster and each goes further. Shift scrolls sideways. With ⌘, ⌥ or ⌃ held, the app gets the wheel as usual.")
                     .settingsFooter()
             }
 
             Section {
+                FeelChart(settings: model.settings)
+                ValueSlider("Glide after fast spins", value: $model.settings.momentum, in: ScrollSettings.ranges.momentum, step: 0.05) {
+                    level($0, ["Short": 0, "Medium": 0.3, "Long": 0.7])
+                }
                 Toggle(isOn: $model.settings.trackpadPhases) {
-                    Text("Behave like a trackpad")
-                    Text("Pages stretch at their edges and spring back.")
+                    Text("Bounce at page ends")
+                    Text("Scrolling past the top or bottom stretches the page, then it springs back.")
                 }
-                Toggle(isOn: $model.settings.smoothHorizontal) {
-                    Text("Smooth horizontal scrolling")
-                    Text("Hold Shift to scroll sideways.")
-                }
-                Toggle("Reverse wheel direction", isOn: $model.settings.reverseDirection)
             } header: {
-                Text("Behavior")
+                Text("Like a Trackpad")
             } footer: {
-                Text("Scrolling with ⌘, ⌥ or ⌃ held is left to the app, for zooming.")
+                Text("Both off by default. The curve shows how fast a page moves after one notch and after a fast spin.")
                     .settingsFooter()
             }
 
-            Section("General") {
+            Section {
                 Toggle("Launch at login", isOn: Binding(
                     get: { model.launchesAtLogin },
                     set: { model.setLaunchAtLogin($0) }
@@ -67,17 +69,6 @@ struct SettingsView: View {
                         .font(.callout)
                         .foregroundStyle(.red)
                 }
-                Toggle(isOn: $model.showsMenuBarIcon) {
-                    Text("Show in menu bar")
-                    if !model.showsMenuBarIcon {
-                        Text("Open Smoother Scroll again to come back here.")
-                    }
-                }
-            }
-
-            Section("Advanced") {
-                ValueStepper("Tail to head ratio", value: $model.settings.tailToHeadRatio, in: ScrollSettings.ranges.tailToHeadRatio, step: 0.5)
-                ValueStepper("Maximum acceleration", value: $model.settings.maxAcceleration, in: ScrollSettings.ranges.maxAcceleration, step: 1)
             }
 
             ExcludedAppsSection(model: model)
@@ -86,7 +77,7 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
-        .softTitleBarEdge()
+        .frame(width: Self.size.width, height: Self.size.height)
     }
 
     /// The name of the highest level `value` reaches, by where each level starts.
@@ -168,7 +159,11 @@ private struct UpdateSection: View {
                     Task { await updater.check() }
                 }
                 .disabled(updater.isChecking || updater.isInstalling)
+            }
+            HStack {
                 Button("Restore Defaults") { model.restoreDefaults() }
+                Spacer()
+                Button("Quit Smoother Scroll") { NSApp.terminate(nil) }
             }
         }
     }
@@ -392,7 +387,7 @@ private struct ValueSlider: View {
             HStack(spacing: 12) {
                 Slider(value: Binding(get: { value }, set: { value = ($0 / step).rounded() * step }), in: range)
                     .labelsHidden()
-                    .frame(width: 180)
+                    .frame(width: 130)
                 Text(format(value))
                     .monospacedDigit()
                     .foregroundStyle(.primary)
@@ -424,21 +419,6 @@ private struct ValueStepper: View {
                 Stepper(title, value: $value, in: range, step: step)
                     .labelsHidden()
             }
-        }
-    }
-}
-
-private extension View {
-    /// What scrolls under the title bar fades into the glass.
-    func softTitleBarEdge() -> some View {
-        mask {
-            VStack(spacing: 0) {
-                Color.clear.frame(height: 22)
-                LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 22)
-                Color.black
-            }
-            .ignoresSafeArea()
         }
     }
 }

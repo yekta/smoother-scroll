@@ -22,6 +22,7 @@ final class ScrollEngine: NSObject, @unchecked Sendable {
     private var link: CADisplayLink?
     private var linkDisplay: CGDirectDisplayID = 0
     private var flags: CGEventFlags = []
+    private var lastNotchTimestamp: CGEventTimestamp = 0
     private var lastLookup = (time: -Double.infinity, excluded: false)
 
     var isRunning: Bool { tap != nil }
@@ -125,7 +126,12 @@ final class ScrollEngine: NSObject, @unchecked Sendable {
         if animator.isIdle {
             followDisplay(at: event.location)
         }
-        animator.notch(dx: dx, dy: dy, at: CACurrentMediaTime(), tuning: tuning)
+        // How far apart notches came is read from when the mouse sent them: they can reach the tap
+        // bunched, and acceleration divides by it.
+        let timestamp = event.timestamp
+        let sinceLast = timestamp > lastNotchTimestamp ? Double(timestamp - lastNotchTimestamp) / 1e9 : nil
+        lastNotchTimestamp = timestamp
+        animator.notch(dx: dx, dy: dy, at: CACurrentMediaTime(), sinceLastNotch: sinceLast, tuning: tuning)
         link?.isPaused = false
         return nil
     }

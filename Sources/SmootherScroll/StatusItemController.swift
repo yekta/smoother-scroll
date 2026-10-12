@@ -1,50 +1,68 @@
 import AppKit
 import ScrollCore
+import SwiftUI
 
+/// The menu bar item. A click drops the settings panel down from it; a right click shows a short
+/// menu.
 @MainActor
-final class StatusItemController: NSObject, NSMenuDelegate {
+final class StatusItemController: NSObject, NSMenuDelegate, NSPopoverDelegate {
     private let model: AppModel
     private let actions: AppActions
-    private var item: NSStatusItem?
+    private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+    private let panel = NSPopover()
+    private let menu = NSMenu()
 
     init(model: AppModel, actions: AppActions) {
         self.model = model
         self.actions = actions
+        super.init()
+
+        panel.behavior = .transient
+        panel.animates = true
+        panel.delegate = self
+        let content = NSHostingController(rootView: SettingsView(model: model))
+        content.sizingOptions = []
+        panel.contentViewController = content
+        panel.contentSize = SettingsView.size
+
+        menu.autoenablesItems = false
+        menu.delegate = self
+
+        guard let button = item.button else { return }
+        button.image = LucideMouse.image()
+        button.target = self
+        button.action = #selector(clicked(_:))
+        button.sendAction(on: [.leftMouseUp, .rightMouseUp])
     }
 
     func update() {
-        guard model.showsMenuBarIcon else {
-            if let item {
-                NSStatusBar.system.removeStatusItem(item)
-            }
-            item = nil
-            return
-        }
-        let item = item ?? makeItem()
-        self.item = item
         item.button?.appearsDisabled = !model.settings.enabled || !model.hasAccess
     }
 
-    private func makeItem() -> NSStatusItem {
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = LucideMouse.image()
-        let menu = NSMenu()
-        menu.autoenablesItems = false
-        menu.delegate = self
-        item.menu = menu
-        return item
+    func showPanel() {
+        guard let button = item.button, !panel.isShown else { return }
+        NSApp.activate()
+        panel.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        panel.contentViewController?.view.window?.makeFirstResponder(nil)
+    }
+
+    @objc private func clicked(_ sender: NSStatusBarButton) {
+        if NSApp.currentEvent?.type == .rightMouseUp {
+            panel.performClose(nil)
+            item.menu = menu
+            sender.performClick(nil)
+            item.menu = nil
+            return
+        }
+        if panel.isShown {
+            panel.performClose(nil)
+        } else {
+            showPanel()
+        }
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
-
-        if !model.hasAccess {
-            let access = NSMenuItem(title: "Allow Accessibility Access…", action: #selector(requestAccess), keyEquivalent: "")
-            access.image = NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: nil)
-            access.target = self
-            menu.addItem(access)
-            menu.addItem(.separator())
-        }
 
         if let update = model.updater.available {
             let title = model.updater.isInstalling ? "Installing \(update.version)…" : "Install \(update.version) and Restart"
@@ -69,15 +87,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         }
 
         menu.addItem(.separator())
-        menu.addItem(actionItem("Settings…", #selector(AppActions.showSettings), key: ","))
-        menu.addItem(actionItem("Check for Updates…", #selector(AppActions.checkForUpdates)))
+        menu.addItem(actionItem("Settings…", #selector(AppActions.showSettings)))
         menu.addItem(actionItem("About Smoother Scroll", #selector(AppActions.showAbout)))
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit Smoother Scroll", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
     }
 
-    private func actionItem(_ title: String, _ action: Selector, key: String = "") -> NSMenuItem {
-        let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
+    private func actionItem(_ title: String, _ action: Selector) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
         item.target = actions
         return item
     }
@@ -86,10 +103,6 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         guard let app = NSWorkspace.shared.frontmostApplication,
               app.bundleIdentifier != Bundle.main.bundleIdentifier else { return nil }
         return ExcludedApp(app)
-    }
-
-    @objc private func requestAccess() {
-        model.requestAccess()
     }
 
     @objc private func toggleEnabled() {

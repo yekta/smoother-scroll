@@ -18,31 +18,31 @@ SmoothScroll, under the MIT license.
 
 - `ScrollSettings.swift`: everything the user tunes, saved as JSON. A setting missing from what
   was saved takes its default.
-- `ScrollTuning.swift`: the settings turned into the numbers the animator runs on: the two lags a
-  notch eases through (their times come from the animation time and the tail to head ratio), the
-  acceleration curve and the glide.
-- `ScrollAnimator.swift`: each notch moves a target that the content follows through two lags,
-  landing exactly on it. A fast spin also leaves a glide, a speed that decays like a trackpad's
-  momentum, which the content keeps to when it is faster. How fast the wheel spins is measured
-  over its last few notches, since events can arrive bunched. While notches arrive, the events
-  are a trackpad gesture (began, changed, ended); once they stop, its momentum. A notch the
-  other way stops the motion first, as a finger on a trackpad does.
+- `ScrollTuning.swift`: the settings turned into the numbers the animator runs on: SmoothScroll's
+  pulse easing (the tail to head ratio sets how much of a notch eases out), the acceleration
+  curve (none up to 3 notches a second, then growing with the spin's speed) and the glide.
+- `ScrollAnimator.swift`: each notch is a pulse, its step eased over the animation time; pulses
+  add up, as in SmoothScroll. How fast the wheel spins is measured over the last few notches by
+  the mouse's own timestamps (events reach the tap bunched), and sets each notch's multiplier. A
+  notch the other way drops what is left. Off by default: a glide after a fast spin, like a
+  trackpad's momentum, and a trackpad's scroll phases (began, changed, ended, then momentum),
+  so views rubber-band at their edges.
 
 ### Sources/SmootherScroll
 
 - `ScrollEngine.swift`: the event tap and a display link, on one thread of their own. One wheel
-  event is one notch (macOS's own wheel acceleration is dropped). Continuous events (trackpads,
+  event is one notch (macOS's own wheel acceleration is dropped; ours replaces it), timed by the
+  event's timestamp. Continuous events (trackpads,
   Magic Mouse) and scrolling with ⌘, ⌥ or ⌃ held pass through; Shift turns vertical into
   horizontal. The events it posts carry `marker` so the tap lets them through.
 - `AppLookup.swift`: the app under the pointer, for the disabled apps.
 - `AppModel.swift`: the settings, the login item and Accessibility access, which the engine
   needs and which is checked every second.
 - `StatusItemController.swift`: the menu bar item, drawn from Lucide's `mouse` (`LucideMouse.swift`).
-- `SettingsView.swift`, `SettingsWindowController.swift`: the settings, a grouped SwiftUI form
-  of stock controls on a window of Liquid Glass over a heavy blur of the desktop, tinted black
-  in dark mode and white in light (the blur alone before macOS 26). The system's Liquid Glass
-  setting (Clear or Tinted, under Appearance) applies to it too. Its curve runs the animator with the settings as they are.
-  While the window is open the app shows in the Dock. A screenshot of the window alone
+  A click drops the settings down from it in a popover; a right click shows a short menu. The
+  popover's size is fixed before it shows: one that resizes as it opens lands off screen.
+- `SettingsView.swift`: the settings, a grouped SwiftUI form of stock controls with plain names.
+  Its curve runs the animator with the settings as they are. A screenshot of a window alone
   (`screencapture -l`) draws it over black; capture the screen around it to see the glass.
 - `Updater.swift`: checks the latest GitHub release at launch and every six hours. A newer one
   shows at the top of the menu and in the settings; installing it downloads the zip, checks it

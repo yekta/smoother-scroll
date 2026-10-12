@@ -3,11 +3,11 @@ import AppKit
 /// What the menus do, shared by the menu bar item and the main menu.
 @MainActor
 final class AppActions: NSObject {
-    var settingsWindow: SettingsWindowController?
+    var statusItem: StatusItemController?
     var updater: Updater?
 
     @objc func showSettings() {
-        settingsWindow?.show()
+        statusItem?.showPanel()
     }
 
     @objc func checkForUpdates() {
@@ -36,23 +36,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = MainMenu.make(actions: actions)
-        actions.settingsWindow = SettingsWindowController(model: model)
         actions.updater = model.updater
         let statusItem = StatusItemController(model: model, actions: actions)
         self.statusItem = statusItem
+        actions.statusItem = statusItem
         model.onChange = { [weak statusItem] in statusItem?.update() }
         model.updater.onChange = { [weak statusItem] in statusItem?.update() }
         statusItem.update()
         model.start()
         model.updater.start()
 
-        if model.isFirstLaunch || !model.hasAccess || !model.showsMenuBarIcon {
-            actions.showSettings()
-        }
+        guard model.isFirstLaunch || !model.hasAccess else { return }
+        DispatchQueue.main.async { statusItem.showPanel() }
     }
 
-    /// Opening the app again, from Finder or Spotlight, shows its settings: the only way back
-    /// when the menu bar icon is hidden.
+    /// Opening the app again, from Finder or Spotlight, drops its settings down from the menu bar.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         actions.showSettings()
         return false

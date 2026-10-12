@@ -8,8 +8,10 @@ import ServiceManagement
 @Observable
 final class AppModel {
     private enum Key {
-        static let settings = "settings"
-        static let showsMenuBarIcon = "showsMenuBarIcon"
+        /// Settings saved before SmoothScroll's settings became ours; only what still means the
+        /// same is taken from them.
+        static let oldSettings = "settings"
+        static let settings = "smoothScrollSettings"
         static let hasLaunched = "hasLaunched"
     }
 
@@ -18,13 +20,6 @@ final class AppModel {
             guard settings != oldValue else { return }
             save()
             engine.update(settings)
-            onChange?()
-        }
-    }
-
-    var showsMenuBarIcon: Bool {
-        didSet {
-            defaults.set(showsMenuBarIcon, forKey: Key.showsMenuBarIcon)
             onChange?()
         }
     }
@@ -41,9 +36,7 @@ final class AppModel {
     @ObservationIgnored private var accessTimer: Timer?
 
     init() {
-        let saved = defaults.data(forKey: Key.settings).flatMap { try? JSONDecoder().decode(ScrollSettings.self, from: $0) }
-        settings = saved ?? ScrollSettings()
-        showsMenuBarIcon = defaults.object(forKey: Key.showsMenuBarIcon) as? Bool ?? true
+        settings = Self.savedSettings(in: defaults)
         isFirstLaunch = !defaults.bool(forKey: Key.hasLaunched)
         defaults.set(true, forKey: Key.hasLaunched)
         engine.update(settings)
@@ -112,6 +105,23 @@ final class AppModel {
         restored.enabled = settings.enabled
         restored.excludedApps = settings.excludedApps
         settings = restored
+    }
+
+    private static func savedSettings(in defaults: UserDefaults) -> ScrollSettings {
+        let decode = { (key: String) in
+            defaults.data(forKey: key).flatMap { try? JSONDecoder().decode(ScrollSettings.self, from: $0) }
+        }
+        if let saved = decode(Key.settings) {
+            return saved
+        }
+        var settings = ScrollSettings()
+        if let old = decode(Key.oldSettings) {
+            settings.enabled = old.enabled
+            settings.smoothHorizontal = old.smoothHorizontal
+            settings.reverseDirection = old.reverseDirection
+            settings.excludedApps = old.excludedApps
+        }
+        return settings
     }
 
     private func save() {

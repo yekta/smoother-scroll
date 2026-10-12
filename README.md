@@ -4,15 +4,14 @@
 
 Makes a mouse wheel on the Mac scroll like a trackpad. A free, open-source alternative to SmoothScroll, under the MIT license.
 
-<img src="docs/settings.png" width="500" alt="The settings window">
+<img src="docs/settings.png" width="470" alt="The settings, dropped down from the menu bar">
 
-- **Smooth notches.** Each notch of the wheel eases in and out and lands exactly where it should, in pixels instead of lines.
-- **Momentum.** Spin the wheel fast and the page glides on after you stop, like a flick on a trackpad. A notch the other way stops it, like a finger on the trackpad.
-- **Acceleration.** A fast spin covers more ground; slow, deliberate notches stay precise.
-- **Feels like a trackpad to apps.** The events carry a trackpad's scroll phases, so pages stretch at their edges and spring back.
+- **Smooth notches.** Each notch eases in and out over a fixed time and lands exactly its distance, in points instead of lines, the way SmoothScroll does. A notch the other way stops what is left.
+- **Speed matters.** How fast the wheel spins is measured from the mouse's own timestamps over the last few notches: a notch at a time moves exactly its distance, a fast spin covers far more ground.
+- **Like a trackpad, if you want.** Off by default: a fast spin can glide on after the wheel stops, and pages can bounce at their ends.
 - **Leaves the rest alone.** Trackpads and the Magic Mouse scroll as they did. Scrolling with ⌘, ⌥ or ⌃ held goes to the app as it was, for zooming. Shift scrolls sideways.
 - **Per app.** Turn it off for apps that want the wheel's own steps, like CAD and 3D tools, from the menu bar or the settings.
-- **Native.** A menu bar app with a tinted glass settings window of stock macOS controls that draws how your settings scroll as you change them. It starts at login and hides from the menu bar if you want.
+- **Native.** A menu bar app: its settings drop down from the menu bar, in stock macOS controls, with a curve of how your settings scroll. It starts at login.
 
 ## Install
 
@@ -28,13 +27,13 @@ Then allow it under **System Settings → Privacy & Security → Accessibility**
 
 | Setting | What it does |
 | --- | --- |
-| Step size | How far one notch scrolls, in points |
-| Animation time | How long one notch takes to settle |
-| Acceleration | How much further a fast spin goes |
-| Momentum | How long a fast spin glides on after the wheel stops. Off makes every notch land exactly |
-| Behave like a trackpad | Sends a trackpad's scroll phases, for the stretch at the edges. Turn it off if an app misbehaves |
-| Tail to head ratio | How much longer a notch eases out than in |
-| Maximum acceleration | The most a notch can be multiplied by |
+| Distance per notch | How far one notch scrolls, in points (250 by default) |
+| Duration per notch | How long one notch's movement lasts (350 ms) |
+| Speed up fast spins | How much further each notch goes as the wheel spins faster. Up to 3 notches a second, none |
+| Fastest speed-up | The most a notch can be multiplied by |
+| Ease in and out, Ease-out length | Each notch speeds up then slows down; the slowing down lasts this many times as long (2×) |
+| Glide after fast spins | Off by default. A fast spin keeps going after the wheel stops, like a flick on a trackpad |
+| Bounce at page ends | Off by default. Sends a trackpad's gestures, so pages stretch past their ends and spring back |
 
 The defaults are a SmoothScroll setup (250 px steps over 350 ms, tail to head ratio 2) with a trackpad's momentum added.
 
