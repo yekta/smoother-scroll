@@ -29,6 +29,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         item.button?.image = LucideMouse.image()
         let menu = NSMenu()
+        menu.autoenablesItems = false
         menu.delegate = self
         item.menu = menu
         return item
@@ -42,6 +43,15 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             access.image = NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: nil)
             access.target = self
             menu.addItem(access)
+            menu.addItem(.separator())
+        }
+
+        if let update = model.updater.available {
+            let title = model.updater.isInstalling ? "Installing \(update.version)…" : "Install \(update.version) and Restart"
+            let install = actionItem(title, #selector(AppActions.installUpdate))
+            install.image = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil)
+            install.isEnabled = !model.updater.isInstalling
+            menu.addItem(install)
             menu.addItem(.separator())
         }
 

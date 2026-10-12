@@ -22,7 +22,7 @@ Download `SmootherScroll.zip` from the [latest release](https://github.com/yekta
 curl -fsSL https://raw.githubusercontent.com/yekta/smoother-scroll/main/scripts/install.sh | sh
 ```
 
-Then allow it under **System Settings → Privacy & Security → Accessibility**: it needs this to change the wheel's scroll events. The app is signed and notarized, so the access stays through updates. **Check for Updates…** in its menu installs new versions itself.
+Then allow it under **System Settings → Privacy & Security → Accessibility**: it needs this to change the wheel's scroll events. The app is signed and notarized, so the access stays through updates. It checks for new versions by itself and offers them in its menu and settings: **Install and Restart** updates it in place.
 
 ## Settings
 

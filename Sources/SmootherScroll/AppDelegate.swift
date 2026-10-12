@@ -4,20 +4,25 @@ import AppKit
 @MainActor
 final class AppActions: NSObject {
     var settingsWindow: SettingsWindowController?
+    var updater: Updater?
 
     @objc func showSettings() {
         settingsWindow?.show()
     }
 
     @objc func checkForUpdates() {
-        Task { await UpdateChecker.check() }
+        Task { await updater?.check() }
+    }
+
+    @objc func installUpdate() {
+        Task { await updater?.install() }
     }
 
     @objc func showAbout() {
         NSApp.activate()
         let link = NSAttributedString(
             string: "github.com/yekta/smoother-scroll",
-            attributes: [.link: UpdateChecker.repository, .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)]
+            attributes: [.link: Updater.repository, .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)]
         )
         NSApp.orderFrontStandardAboutPanel(options: [.credits: link])
     }
@@ -32,11 +37,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = MainMenu.make(actions: actions)
         actions.settingsWindow = SettingsWindowController(model: model)
+        actions.updater = model.updater
         let statusItem = StatusItemController(model: model, actions: actions)
         self.statusItem = statusItem
         model.onChange = { [weak statusItem] in statusItem?.update() }
+        model.updater.onChange = { [weak statusItem] in statusItem?.update() }
         statusItem.update()
         model.start()
+        model.updater.start()
 
         if model.isFirstLaunch || !model.hasAccess || !model.showsMenuBarIcon {
             actions.showSettings()

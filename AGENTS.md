@@ -44,8 +44,9 @@ SmoothScroll, under the MIT license.
   setting (Clear or Tinted, under Appearance) applies to it too. Its curve runs the animator with the settings as they are.
   While the window is open the app shows in the Dock. A screenshot of the window alone
   (`screencapture -l`) draws it over black; capture the screen around it to see the glass.
-- `UpdateChecker.swift`: compares the version with the latest GitHub release and installs it:
-  it downloads the zip, swaps the app and restarts it.
+- `Updater.swift`: checks the latest GitHub release at launch and every six hours. A newer one
+  shows at the top of the menu and in the settings; installing it downloads the zip, checks it
+  is signed by the team (44R7KF7645), swaps the app and restarts it.
 
 ### Resources, assets and scripts
 

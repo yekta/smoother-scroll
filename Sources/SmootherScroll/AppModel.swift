@@ -36,6 +36,7 @@ final class AppModel {
     @ObservationIgnored var onChange: (() -> Void)?
     @ObservationIgnored let isFirstLaunch: Bool
     @ObservationIgnored private let defaults = UserDefaults.standard
+    @ObservationIgnored let updater = Updater()
     @ObservationIgnored private let engine = ScrollEngine()
     @ObservationIgnored private var accessTimer: Timer?
 

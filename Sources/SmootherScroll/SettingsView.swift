@@ -82,17 +82,7 @@ struct SettingsView: View {
 
             ExcludedAppsSection(model: model)
 
-            Section {
-                HStack {
-                    Text("Version \(UpdateChecker.currentVersion)")
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Button("Check for Updates") {
-                        Task { await UpdateChecker.check() }
-                    }
-                    Button("Restore Defaults") { model.restoreDefaults() }
-                }
-            }
+            UpdateSection(model: model)
         }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
@@ -137,6 +127,50 @@ private struct Header: View {
         guard model.hasAccess else { return ("Needs Accessibility access", .orange) }
         guard model.settings.enabled else { return ("Paused", .secondary) }
         return ("Smoothing your mouse wheel", .green)
+    }
+}
+
+private struct UpdateSection: View {
+    let model: AppModel
+
+    var body: some View {
+        let updater = model.updater
+        Section {
+            if let update = updater.available {
+                HStack {
+                    Label {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Smoother Scroll \(update.version) is available")
+                            Text("You have \(Updater.currentVersion). It restarts once installed.")
+                                .foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: "arrow.down.circle.fill")
+                            .foregroundStyle(.tint)
+                    }
+                    Spacer()
+                    if updater.isInstalling {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                    Button("Install and Restart") {
+                        Task { await updater.install() }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(updater.isInstalling)
+                }
+            }
+            HStack {
+                Text("Version \(Updater.currentVersion)")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("Check for Updates") {
+                    Task { await updater.check() }
+                }
+                .disabled(updater.isChecking || updater.isInstalling)
+                Button("Restore Defaults") { model.restoreDefaults() }
+            }
+        }
     }
 }
 
