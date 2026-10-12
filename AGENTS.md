@@ -39,8 +39,10 @@ SmoothScroll, under the MIT license.
   needs and which is checked every second.
 - `StatusItemController.swift`: the menu bar item, drawn from Lucide's `mouse` (`LucideMouse.swift`).
 - `SettingsView.swift`, `SettingsWindowController.swift`: the settings, a grouped SwiftUI form
-  of stock controls. Its curve runs the animator with the settings as they are. While the
-  window is open the app shows in the Dock.
+  of stock controls on a window of Liquid Glass, tinted black in dark mode and white in light
+  (a material before macOS 26). Its curve runs the animator with the settings as they are.
+  While the window is open the app shows in the Dock. A screenshot of the window alone
+  (`screencapture -l`) draws it over black; capture the screen around it to see the glass.
 - `UpdateChecker.swift`: compares the version with the latest GitHub release.
 
 ### Resources, assets and scripts
@@ -59,7 +61,7 @@ SmoothScroll, under the MIT license.
   nothing slow runs in the tap, which macOS turns off when it is late.
 - How scrolling feels belongs in `ScrollCore`, where it is tested, not in the engine.
 - The app looks like the current macOS: stock AppKit and SwiftUI controls in the system's
-  colours, no colours or materials of our own, the Lucide mouse for the app.
+  colours on tinted glass, no colours of our own, the Lucide mouse for the app.
 - Do not leave paragraphs of comments on top of the code. Prefer clear names; keep the comments
   that are needed concise. Comments move with the code.
 - Use guard statement patterns in any code you write.

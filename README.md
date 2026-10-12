@@ -12,7 +12,7 @@ Makes a mouse wheel on the Mac scroll like a trackpad. A free, open-source alter
 - **Feels like a trackpad to apps.** The events carry a trackpad's scroll phases, so pages stretch at their edges and spring back.
 - **Leaves the rest alone.** Trackpads and the Magic Mouse scroll as they did. Scrolling with ⌘, ⌥ or ⌃ held goes to the app as it was, for zooming. Shift scrolls sideways.
 - **Per app.** Turn it off for apps that want the wheel's own steps, like CAD and 3D tools, from the menu bar or the settings.
-- **Native.** A menu bar app with a plain macOS settings window that draws how your settings scroll as you change them. It starts at login and hides from the menu bar if you want.
+- **Native.** A menu bar app with a tinted glass settings window of stock macOS controls that draws how your settings scroll as you change them. It starts at login and hides from the menu bar if you want.
 
 ## Install
 

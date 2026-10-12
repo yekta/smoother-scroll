@@ -95,6 +95,8 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .softTitleBarEdge()
     }
 
     /// The name of the highest level `value` reaches, by where each level starts.
@@ -359,6 +361,7 @@ private struct ValueSlider: View {
                     .frame(width: 180)
                 Text(format(value))
                     .monospacedDigit()
+                    .foregroundStyle(.primary)
                     .frame(width: 60, alignment: .trailing)
             }
         }
@@ -383,9 +386,25 @@ private struct ValueStepper: View {
             HStack(spacing: 8) {
                 Text("\(value.formatted(.number.precision(.fractionLength(0...1))))×")
                     .monospacedDigit()
+                    .foregroundStyle(.primary)
                 Stepper(title, value: $value, in: range, step: step)
                     .labelsHidden()
             }
+        }
+    }
+}
+
+private extension View {
+    /// What scrolls under the title bar fades into the glass.
+    func softTitleBarEdge() -> some View {
+        mask {
+            VStack(spacing: 0) {
+                Color.clear.frame(height: 22)
+                LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 22)
+                Color.black
+            }
+            .ignoresSafeArea()
         }
     }
 }
