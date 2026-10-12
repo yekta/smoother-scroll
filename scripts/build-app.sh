@@ -13,17 +13,15 @@ BUNDLE_ID="com.yekta.SmootherScroll"
 VERSION="${VERSION:-$(scripts/release-version.sh 2>/dev/null || echo "$(tr -d '[:space:]' < VERSION).0")}"
 
 echo "▸ Building the app…"
-# SwiftPM stamps the binary as built with the SDK of its deployment target, and macOS then draws
-# it in the old style. Stamping the real SDK gives it the current controls and Liquid Glass.
-SDK_VERSION="$(xcrun --sdk macosx --show-sdk-version)"
-BUILD=(swift build -c release --arch arm64 --arch x86_64
-    -Xlinker -platform_version -Xlinker macos -Xlinker 14.0 -Xlinker "$SDK_VERSION")
-"${BUILD[@]}"
-BINARY="$("${BUILD[@]}" --show-bin-path)/SmootherScroll"
+swift build -c release --arch arm64 --arch x86_64
+BINARY="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/SmootherScroll"
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$BINARY" "$APP/Contents/MacOS/SmootherScroll"
+# SwiftPM stamps the binary as built with the SDK of its deployment target, and macOS then draws
+# it in the old style. Stamping the real SDK gives it the current controls and Liquid Glass.
+xcrun vtool -set-build-version macos 14.0 "$(xcrun --sdk macosx --show-sdk-version)" -replace \
+    -output "$APP/Contents/MacOS/SmootherScroll" "$BINARY"
 
 # The Icon Composer icon becomes Assets.car for macOS 26, and AppIcon.icns for the ones before.
 xcrun actool "$PWD/Resources/AppIcon.icon" --compile "$PWD/$APP/Contents/Resources" \
