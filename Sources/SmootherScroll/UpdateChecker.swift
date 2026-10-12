@@ -1,9 +1,6 @@
 import AppKit
 
 /// Asks GitHub for the latest release and installs it when it is newer than this one.
-///
-/// The app downloads the update itself: a browser's download would be quarantined, and as the
-/// app isn't notarized, Gatekeeper would block it.
 @MainActor
 enum UpdateChecker {
     static let repository = URL(string: "https://github.com/yekta/smoother-scroll")!
@@ -50,7 +47,7 @@ enum UpdateChecker {
                 return
             }
             alert.messageText = "Smoother Scroll \(version) is available"
-            alert.informativeText = "You have version \(currentVersion). It restarts once installed; macOS then asks for Accessibility access again."
+            alert.informativeText = "You have version \(currentVersion). Smoother Scroll restarts once it is installed."
             alert.addButton(withTitle: "Install and Restart")
             alert.addButton(withTitle: "Later")
             guard present(alert) == .alertFirstButtonReturn else { return }

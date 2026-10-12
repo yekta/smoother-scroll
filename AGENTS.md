@@ -45,8 +45,7 @@ SmoothScroll, under the MIT license.
   While the window is open the app shows in the Dock. A screenshot of the window alone
   (`screencapture -l`) draws it over black; capture the screen around it to see the glass.
 - `UpdateChecker.swift`: compares the version with the latest GitHub release and installs it:
-  it downloads the zip itself, since a browser's download is quarantined and Gatekeeper blocks
-  an app that isn't notarized, then swaps the app and restarts it.
+  it downloads the zip, swaps the app and restarts it.
 
 ### Resources, assets and scripts
 
@@ -57,8 +56,7 @@ SmoothScroll, under the MIT license.
   the binary with the SDK it was built with: SwiftPM stamps the deployment target's, and macOS
   then draws the app in the old style, without Liquid Glass.
 - `scripts/release-version.sh`: the version of a commit: `VERSION` and the number of commits.
-- `scripts/install.sh`: installs the latest release into /Applications with curl, which leaves
-  it unquarantined. README.md tells users to install this way.
+- `scripts/install.sh`: installs the latest release into /Applications from Terminal.
 
 ## General Rules:
 
@@ -84,15 +82,16 @@ Needs a Mac with Xcode 26 or later (for the icon).
     scripts/build-app.sh --open      # builds and opens build/Smoother Scroll.app
     swift test                       # the core's tests
 
-The app needs Accessibility access. A build is signed ad hoc, so each new build is a new app to
+The app needs Accessibility access. A local build is signed ad hoc, so each one is a new app to
 macOS: remove the old entry under System Settings → Privacy & Security → Accessibility and add
-the new one.
+the new one. Releases are signed with the Developer ID, so their access stays through updates.
 
 `build.yml` tests and builds pull requests. On `main`, `release.yml` tests, builds and publishes
 the app as a GitHub release. With the repository's signing secrets (`APPLE_CERTIFICATE` and
 `APPLE_CERTIFICATE_PASSWORD`, the Developer ID Application certificate as a base64 .p12 and its
 password; `APPLE_API_KEY`, `APPLE_API_KEY_ID` and `APPLE_API_ISSUER_ID`, an App Store Connect API
-key) it signs and notarizes the app; without them it signs it ad hoc.
+key) it signs and notarizes the app; without them it signs it ad hoc. They come from
+`~/apple-signing` on the dev machine, whose README.md says which file is which secret.
 
 ## Commit Messages
 

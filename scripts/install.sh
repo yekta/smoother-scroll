@@ -3,8 +3,6 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/yekta/smoother-scroll/main/scripts/install.sh | sh
 #
-# The app isn't notarized. A download from a browser is quarantined and Gatekeeper blocks it; a
-# download with curl isn't, so the app opens as is.
 set -eu
 
 APP="/Applications/Smoother Scroll.app"
