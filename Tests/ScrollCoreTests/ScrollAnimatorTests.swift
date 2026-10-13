@@ -46,7 +46,7 @@ private var withTrackpadExtras: ScrollSettings {
 
 @Test func oneNotchMovesItsStepOverTheAnimationTime() {
     let events = run(notches: [0])
-    #expect(total(events) == 250)
+    #expect(total(events) == 150)
     let lastMove = events.filter { $0.output.moves }.map(\.time).max() ?? 0
     #expect(lastMove <= 0.35 + frame)
 }
@@ -54,7 +54,7 @@ private var withTrackpadExtras: ScrollSettings {
 @Test func aNotchFollowsItsEasing() {
     let tuning = ScrollTuning(ScrollSettings())
     let halfway = run(notches: [0], until: 0.175 + frame / 2)
-    #expect(abs(Double(total(halfway)) - 250 * tuning.ease(0.5)) <= 1)
+    #expect(abs(Double(total(halfway)) - 150 * tuning.ease(0.5)) <= 1)
     #expect(tuning.ease(0) == 0)
     #expect(tuning.ease(1) == 1)
 }
@@ -141,7 +141,7 @@ private var withTrackpadExtras: ScrollSettings {
 
 @Test func withMomentumNotchesOneByOneDoNotGlide() {
     let events = run(notches: spin(every: 0.4, count: 4), settings: withTrackpadExtras)
-    #expect(total(events) == 4 * 250)
+    #expect(total(events) == 4 * 150)
 }
 
 @Test func trackpadPhasesFollowAGesture() {
@@ -202,7 +202,7 @@ private func distance(of count: Int, over seconds: Double, settings: ScrollSetti
 }
 
 @Test func slowNotchesMoveExactlyTheirStep() {
-    #expect(distance(of: 10, over: 4) == 2500)
+    #expect(distance(of: 10, over: 4) == 1500)
 }
 
 @Test func theFasterTheWheelSpinsTheFurtherEachNotchGoes() {
@@ -221,7 +221,7 @@ private func distance(of count: Int, over seconds: Double, settings: ScrollSetti
     #expect(tuning.multiplier(rate: 500) == 20)
     var off = ScrollSettings()
     off.acceleration = 0
-    #expect(distance(of: 10, over: 0.2, settings: off) == 2500)
+    #expect(distance(of: 10, over: 0.2, settings: off) == 1500)
 }
 
 @Test func notchesSentTogetherCountAsSpreadOut() {
@@ -243,7 +243,7 @@ private func distance(of count: Int, over seconds: Double, settings: ScrollSetti
         moved += animator.advance(to: time, tuning: tuning).reduce(0) { $0 + Int($1.dy) }
         time += frame
     }
-    #expect(moved > 2 * 2500)
+    #expect(moved > 2 * 1500)
     #expect(abs(moved - apart) < apart / 10)
 }
 
@@ -256,6 +256,6 @@ private func distance(of count: Int, over seconds: Double, settings: ScrollSetti
     for frame in 1...60 {
         moved += animator.advance(to: Double(frame) / 120, tuning: tuning).reduce(0) { $0 + Int($1.dy) }
     }
-    #expect(moved == 500)
+    #expect(moved == 300)
 }
 
