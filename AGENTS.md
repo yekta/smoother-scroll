@@ -35,16 +35,20 @@ SmoothScroll, under the MIT license.
 ### Sources/SmootherScroll
 
 - `ScrollEngine.swift`: the event tap and a display link, on one thread of their own. One wheel
-  event is one whole notch along its main axis, timed by the event's timestamp: macOS sends a
-  slow notch as about a tenth of a line and a fast one as many lines, and our acceleration
-  replaces that. Continuous events (trackpads,
+  event is as many whole notches as the mouse's report says (one without it) along its main axis,
+  timed by the event's timestamp: macOS sends a slow notch as about a tenth of a line and a fast
+  one as many lines, and our acceleration replaces that. Continuous events (trackpads,
   Magic Mouse) and scrolling with ⌘, ⌥ or ⌃ held pass through; Shift turns vertical into
   horizontal. The events it posts carry `marker` so the tap lets them through.
+- `WheelReader.swift`: the wheel's own counts, read from the mouse over IOKit HID on the engine's
+  thread. A fast spin sends several notches in one report, which macOS folds into one event; each
+  event is matched to its report by timestamp and counts as that many notches. Needs Input
+  Monitoring access; without it an event is one notch.
 - `WheelLog.swift`: with `logWheelEvents` set in the app's defaults, writes what each wheel event
   says to ~/Library/Logs/Smoother Scroll/wheel.log; README.md tells users how.
 - `AppLookup.swift`: the app under the pointer, for the disabled apps.
-- `AppModel.swift`: the settings, the login item and Accessibility access, which the engine
-  needs and which is checked every second.
+- `AppModel.swift`: the settings, the login item, and Accessibility and Input Monitoring access,
+  checked every second: the engine needs the first, the wheel's counts the second.
 - `StatusItemController.swift`: the menu bar item, drawn from Lucide's `mouse` (`LucideMouse.swift`).
   A click drops the settings down from it in a popover; a right click shows a short menu. The
   popover's size is fixed before it shows (one that resizes as it opens lands off screen), and
@@ -93,9 +97,10 @@ Needs a Mac with Xcode 26 or later (for the icon).
     scripts/build-app.sh --open      # builds and opens build/Smoother Scroll.app
     swift test                       # the core's tests
 
-The app needs Accessibility access. A local build is signed ad hoc, so each one is a new app to
-macOS: remove the old entry under System Settings → Privacy & Security → Accessibility and add
-the new one. Releases are signed with the Developer ID, so their access stays through updates.
+The app needs Accessibility access, and Input Monitoring for the wheel's counts. A local build is
+signed ad hoc, so each one is a new app to macOS: remove the old entry under System Settings →
+Privacy & Security → Accessibility (and Input Monitoring) and add the new one. Releases are signed
+with the Developer ID, so their access stays through updates.
 
 `build.yml` tests and builds pull requests. On `main`, `release.yml` tests, builds and publishes
 the app as a GitHub release. With the repository's signing secrets (`APPLE_CERTIFICATE` and

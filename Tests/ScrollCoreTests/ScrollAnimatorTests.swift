@@ -228,6 +228,25 @@ private func distance(of count: Int, over seconds: Double, settings: ScrollSetti
     #expect(ScrollAnimator.rate(of: [0, 0.0001]) == 1 / ScrollTuning.closestNotches)
 }
 
+@Test func notchesInOneEventGoAsFarAsSentApart() {
+    let apart = distance(of: 10, over: 0.5)
+    let tuning = ScrollTuning(ScrollSettings())
+    var animator = ScrollAnimator()
+    var moved = 0
+    var next = 0
+    var time = 0.0
+    while time < 2 {
+        while next < 5, Double(next) * 0.1 <= time {
+            animator.notch(dx: 0, dy: 2, at: Double(next) * 0.1, sinceLastNotch: next == 0 ? nil : 0.1, tuning: tuning)
+            next += 1
+        }
+        moved += animator.advance(to: time, tuning: tuning).reduce(0) { $0 + Int($1.dy) }
+        time += frame
+    }
+    #expect(moved > 2 * 2500)
+    #expect(abs(moved - apart) < apart / 10)
+}
+
 @Test func speedIsMeasuredByWhenTheMouseSentTheNotches() {
     let tuning = ScrollTuning(ScrollSettings())
     var animator = ScrollAnimator()

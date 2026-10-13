@@ -24,6 +24,7 @@ final class ScrollEngine: NSObject, @unchecked Sendable {
     private var flags: CGEventFlags = []
     private var lastNotchTimestamp: CGEventTimestamp = 0
     private var lastLookup = (time: -Double.infinity, excluded: false)
+    private let wheel = WheelReader()
     private let log = WheelLog()
 
     var isRunning: Bool { tap != nil }
@@ -58,6 +59,7 @@ final class ScrollEngine: NSObject, @unchecked Sendable {
             let source = CFMachPortCreateRunLoopSource(nil, port, 0)
             CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)
             CGEvent.tapEnable(tap: port, enable: true)
+            self.wheel.start()
             CFRunLoopRun()
         }
         thread.name = "Smoother Scroll"
@@ -69,7 +71,17 @@ final class ScrollEngine: NSObject, @unchecked Sendable {
         return true
     }
 
+    /// Starts reading the wheel's counts over again, once Input Monitoring access is given.
+    func reopenWheel() {
+        guard let thread else { return }
+        perform(#selector(startWheel), on: thread, with: nil, waitUntilDone: false)
+    }
+
     // MARK: Engine thread
+
+    @objc private func startWheel() {
+        wheel.start()
+    }
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         switch type {
@@ -102,6 +114,8 @@ final class ScrollEngine: NSObject, @unchecked Sendable {
             stopAnimation()
             return pass
         }
+        // Taken for every wheel event, so passed ones do not leave their reports behind.
+        let counts = wheel.notches(for: event)
         guard current.enabled else { return pass }
         // Zooming and the like expect the wheel's own steps.
         guard event.flags.intersection([.maskCommand, .maskControl, .maskAlternate]).isEmpty else {
@@ -109,7 +123,7 @@ final class ScrollEngine: NSObject, @unchecked Sendable {
             return pass
         }
 
-        var (dx, dy) = notch(of: event)
+        var (dx, dy) = notch(of: event, counts: counts)
         if event.flags.contains(.maskShift), dx == 0 {
             swap(&dx, &dy)
         }
@@ -139,15 +153,20 @@ final class ScrollEngine: NSObject, @unchecked Sendable {
         return nil
     }
 
-    /// One event is one whole notch, along its main axis. macOS sends a slow notch as a fraction of
-    /// a line (about 0.1) and a fast one as many lines; taking those literally made a slow notch a
-    /// tenth of its step. How fast the wheel spins is ours to measure.
-    private func notch(of event: CGEvent) -> (dx: Double, dy: Double) {
+    /// One event is as many whole notches as the mouse's report says, or one without it, along its
+    /// main axis. macOS sends a slow notch as a fraction of a line (about 0.1) and a fast one as
+    /// many lines; taking those literally made a slow notch a tenth of its step. How fast the
+    /// wheel spins is ours to measure.
+    private func notch(of event: CGEvent, counts: (vertical: Int, horizontal: Int)?) -> (dx: Double, dy: Double) {
         let vertical = lines(event, .scrollWheelEventDeltaAxis1, .scrollWheelEventFixedPtDeltaAxis1)
         let horizontal = lines(event, .scrollWheelEventDeltaAxis2, .scrollWheelEventFixedPtDeltaAxis2)
         guard vertical != 0 || horizontal != 0 else { return (0, 0) }
-        guard abs(horizontal) > abs(vertical) else { return (0, vertical > 0 ? 1 : -1) }
-        return (horizontal > 0 ? 1 : -1, 0)
+        guard abs(horizontal) > abs(vertical) else {
+            let count = Double(max(counts?.vertical ?? 1, 1))
+            return (0, vertical > 0 ? count : -count)
+        }
+        let count = Double(max(counts?.horizontal ?? 1, 1))
+        return (horizontal > 0 ? count : -count, 0)
     }
 
     private func lines(_ event: CGEvent, _ whole: CGEventField, _ fraction: CGEventField) -> Double {
