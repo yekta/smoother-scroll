@@ -36,7 +36,7 @@ public struct ScrollOutput: Equatable, Sendable {
 /// Turns wheel notches into smooth scrolling, the way SmoothScroll does.
 ///
 /// Each notch is a pulse: its step, eased over the animation time. Pulses add up, so notches that
-/// come quickly overlap and the page keeps moving. A notch the other way drops what is left of
+/// come quickly overlap and the page keeps moving; several in one event make one larger pulse. A notch the other way drops what is left of
 /// them. With momentum on, a fast spin also leaves a glide that decays like a trackpad's, which
 /// the page keeps to while it is faster than the pulses. With trackpad phases on, the events are a
 /// trackpad gesture while notches arrive and its momentum once they stop.
@@ -76,8 +76,9 @@ public struct ScrollAnimator: Sendable {
 
     public var isIdle: Bool { state == .idle && pending.isEmpty }
 
-    /// A wheel event: `dx` and `dy` are notches, positive up and left like the event's deltas.
-    /// `sinceLastNotch`, when known, is how long after the last notch the mouse sent this one.
+    /// A wheel event: `dx` and `dy` are notches, positive up and left like the event's deltas. More
+    /// than one is a fast spin's notches sent in one report, spread over the time since the last.
+    /// `sinceLastNotch`, when known, is how long after the last event the mouse sent this one.
     public mutating func notch(dx: Double, dy: Double, at now: Double, sinceLastNotch: Double? = nil, tuning: ScrollTuning) {
         guard dx != 0 || dy != 0 else { return }
         if state == .idle {
@@ -104,10 +105,15 @@ public struct ScrollAnimator: Sendable {
         if elapsed > ScrollTuning.spinWindow {
             recent.removeAll()
         }
-        mouseClock += elapsed.isFinite ? max(elapsed, 0) : 0
-        recent.append(mouseClock)
+        // The first event's notches have nothing to be spread over, so they say nothing of speed.
+        let count = elapsed.isFinite ? max(1, Int(max(abs(dx), abs(dy)).rounded())) : 1
+        let gap = elapsed.isFinite ? max(elapsed, 0) / Double(count) : 0
+        for _ in 0..<count {
+            mouseClock += gap
+            recent.append(mouseClock)
+        }
         if recent.count > 5 {
-            recent.removeFirst()
+            recent.removeFirst(recent.count - 5)
         }
         lastNotch = at
 

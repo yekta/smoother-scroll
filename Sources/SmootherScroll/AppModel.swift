@@ -25,6 +25,7 @@ final class AppModel {
     }
 
     private(set) var hasAccess = AXIsProcessTrusted()
+    private(set) var hasInputAccess = WheelReader.hasAccess
     private(set) var launchesAtLogin = SMAppService.mainApp.status == .enabled
     private(set) var loginItemError: String?
 
@@ -42,7 +43,8 @@ final class AppModel {
         engine.update(settings)
     }
 
-    /// Starts the engine as soon as the app has Accessibility access, and keeps watching it.
+    /// Starts the engine as soon as the app has Accessibility access, and keeps watching it. Input
+    /// Monitoring, for the wheel's counts, is asked for once the engine runs.
     func start() {
         if isFirstLaunch {
             setLaunchAtLogin(true)
@@ -57,9 +59,15 @@ final class AppModel {
         let trusted = AXIsProcessTrusted()
         if trusted, !engine.isRunning {
             _ = engine.start()
+            WheelReader.requestAccess()
         }
-        guard trusted != hasAccess else { return }
+        let listens = WheelReader.hasAccess
+        if listens, !hasInputAccess {
+            engine.reopenWheel()
+        }
+        guard trusted != hasAccess || listens != hasInputAccess else { return }
         hasAccess = trusted
+        hasInputAccess = listens
         onChange?()
     }
 
@@ -67,6 +75,12 @@ final class AppModel {
         let prompt = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
         _ = AXIsProcessTrustedWithOptions([prompt: true] as CFDictionary)
         guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    func requestInputAccess() {
+        WheelReader.requestAccess()
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent") else { return }
         NSWorkspace.shared.open(url)
     }
 

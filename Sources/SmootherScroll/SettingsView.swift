@@ -16,7 +16,17 @@ struct SettingsView: View {
             }
 
             if !model.hasAccess {
-                AccessSection(model: model)
+                AccessSection(
+                    title: "Allow Accessibility access",
+                    detail: "Smoother Scroll needs it to smooth your wheel. If it is already in the list, remove it with − and add it again.",
+                    request: model.requestAccess
+                )
+            } else if !model.hasInputAccess {
+                AccessSection(
+                    title: "Allow Input Monitoring access",
+                    detail: "Smoother Scroll reads from the mouse how many notches the wheel turned. Without it, a fast spin loses notches.",
+                    request: model.requestInputAccess
+                )
             }
 
             Section {
@@ -176,14 +186,16 @@ private struct UpdateSection: View {
 }
 
 private struct AccessSection: View {
-    let model: AppModel
+    let title: String
+    let detail: String
+    let request: () -> Void
 
     var body: some View {
         Section {
             Label {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Allow Accessibility access")
-                    Text("Smoother Scroll needs it to smooth your wheel. If it is already in the list, remove it with − and add it again.")
+                    Text(title)
+                    Text(detail)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -193,7 +205,7 @@ private struct AccessSection: View {
             }
             HStack {
                 Spacer()
-                Button("Open System Settings") { model.requestAccess() }
+                Button("Open System Settings") { request() }
                     .buttonStyle(.borderedProminent)
             }
         }
