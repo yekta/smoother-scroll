@@ -27,7 +27,7 @@ Then allow it under **System Settings → Privacy & Security → Accessibility**
 
 | Setting | What it does |
 | --- | --- |
-| Distance per notch | How far one notch scrolls, in points (250 by default) |
+| Distance per notch | How far one notch scrolls, in points (150 by default) |
 | Duration per notch | How long one notch's movement lasts (350 ms) |
 | Speed up fast spins | How much further each notch goes as the wheel spins faster. Up to 3 notches a second, none |
 | Fastest speed-up | The most a notch can be multiplied by |
@@ -35,7 +35,7 @@ Then allow it under **System Settings → Privacy & Security → Accessibility**
 | Glide after fast spins | Off by default. A fast spin keeps going after the wheel stops, like a flick on a trackpad |
 | Bounce at page ends | Off by default. Sends a trackpad's gestures, so pages stretch past their ends and spring back |
 
-The defaults start from a SmoothScroll setup: 250 pt per notch over 350 ms.
+The defaults start from a SmoothScroll setup, with a shorter notch: 150 pt per notch over 350 ms.
 
 ## Seeing what your mouse sends
 

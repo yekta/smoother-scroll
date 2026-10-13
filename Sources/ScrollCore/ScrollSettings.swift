@@ -19,7 +19,7 @@ public struct ExcludedApp: Codable, Hashable, Identifiable, Sendable {
 public struct ScrollSettings: Codable, Equatable, Sendable {
     public var enabled = true
     /// Points one notch of the wheel scrolls.
-    public var stepSize: Double = 250
+    public var stepSize: Double = 150
     /// Milliseconds one notch's animation lasts.
     public var animationTime: Double = 350
     /// How much a fast spin speeds each notch up: 0 is off, 1 the default, 2 twice as much.
